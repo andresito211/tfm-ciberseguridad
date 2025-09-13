@@ -1,3 +1,5 @@
+version: '3.5'
+
 services:
   web:
     build: .
@@ -18,10 +20,12 @@ services:
       - POSTGRES_SERVER=db
       - POSTGRES_PORT=5432
       - POSTGRES_DB=restaurant
+    networks: 
+      - damn_game
   db:
     image: postgres:15.4-alpine
     volumes:
-      - pg_volume:/var/lib/postgresql/data/
+      - ./postgres_data:/var/lib/postgresql/data/
     environment:
       - POSTGRES_USER=admin
       - POSTGRES_PASSWORD=password
@@ -33,5 +37,14 @@ services:
       start_period: 5s
     expose: 
       - 5432
-volumes:
-  pg_volume:
+    networks: 
+      - damn_game
+
+
+networks:
+  # Redes internas en el anfitrión de Docker
+  damn_game:
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.169.32.0/24
