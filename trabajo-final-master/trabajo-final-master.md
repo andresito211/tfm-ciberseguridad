@@ -53,16 +53,34 @@ Las direcciones que se van a explorar son las siguientes:
 
 # 1.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
 
-Lo que llama más la atención aquí es que Firefox incluye dos barras de opciones adicionales para poder interactuar mejor con la API (ver "/" y "/admin").
+1. Se pudo obtener la documentación del uso de la API a través de los enlaces /docs y /redoc. Además se puede obtener la especificación OpenAPI, que será muy útil para la sección 2. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO de este trabajo.
+
+2. Llama la atención aquí es que Firefox incluye dos barras de opciones adicionales para poder interactuar mejor con la API (ver "/" y "/admin").
 
 
 ## 2. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO
 
 Para este trabajo se empleará ZAP v2.16.0.
 
-### 2.1 ESCANEO AUTOMÁTICO EN "/"
+### 2.1. CONFIGURACIÓN DE ZAP
 
-Con esto se hará la revisión en el origen.
+Se dejará activado el escáner pasivo, ya que permite realizar una auditoría de forma más rápida y controlada, esto es que en la medida que se avanza manualmente, el escáner pasivo hará tareas en segundo plano para detectar posibles vulnerabilidades. La configuración de este quedará así para este trabajo:
+
+Passive Scan Rules:
+
+- Threshold = Medium para todos los tests, no importando el status (beta, alpha o release).
+
+Passive scan tags:
+
+- Todas habilitadas (enabled).
+
+Passive scanner:
+
+- Solo escanear lo que esté en la cobertura definida (scope).
+- No incluirá tráfico del fuzzer durante escaneo pasivo.
+- 3 hilos para escaneo pasivo.
+- Alertas y tamaño del cuerpo en bytes para escanear sin límites.
+
 
 ### 2.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
 
