@@ -1,5 +1,40 @@
 # TRABAJO FINAL DE MÁSTER
 
+El objetivo es la detección de vulnerabilidades de una API que se usa como ejercicio para practicar y mejorar las habilidades a la hora de buscar y explotar vulnerabilidades. Como la idea es simular un caso de auditoría de la API, en la vida real es importante tener claro los requisitos mínimos para poder iniciarla y una estrategia, ya que el tiempo es algo que apremia y no puede desperdiciarse debido a los costos de operación que implica realizarla.
+
+## 1. PLANIFICACIÓN
+
+### 1.1. REQUISITOS MÍNIMOS
+
+Para poder definirlos, se necesita saber qué es lo que se va a auditar y cuál es el alcance mínimo requerido como requisito. Para este caso, será una API llamada "Damn Vulnerable RESTaurant", una API hecha con vulnerabilidades a propósito para practicar hacking ético. Los datos más relevantes para poder establecer una estrategia son:
+
+- La API está hecha en un framework llamado FastAPI, que usa Python como lenguaje de programación.
+- La base de datos está en Postgres.
+- Se puede desplegar usando docker compose.
+
+
+Con estos datos, lo mínimo que se requiere es:
+
+- Un computador que sea capaz de ejecutar Docker. Por practicidad, se utilizará Linux Ubuntu 24.04 como sistema operativo anfitrión.
+
+- Un computador adicional que tenga OWASP ZAP instalado o una máquina virtual con Kali Linux, que ya lo trae por defecto.
+
+Como es un ejercicio de una API pequeña (ver su documentación en el README.md en su repo: https://github.com/theowni/Damn-Vulnerable-RESTaurant-API-Game.git), con un computador con la siguiente configuración es suficiente:
+
+- Hardware: procesador Intel Core i7 10750H, 32 GB de RAM y 240 GB de almacenamiento.
+- SO anfitrión: Ubuntu 24.04, con docker y docker compose.
+- Máquina virtual con Kali Linux, que ya trae OWASP ZAP, que corre en VirtualBox v7.1.12
+- El computador estará conectado a una red LAN gobernada por un router, que le asignará las direcciones IP dinámicamente tanto al anfitrión como a la MV.
+
+### 1.2. ESTRATEGIA
+
+1. Se despliega la API con docker compose en el anfitrión.
+2. Se hace una exploración manual usando los navegadores Google Chrome y Mozilla Firefox apuntando a unas direcciones definidas.
+3. Para el caso de encontrar documentación (Swagger por ejemplo), se intentará descargar la especificación OpenAPI. Si no la tuviere o no se pudiere encontrar, entonces lo que se haría en la vida real sería preguntar sobre el descriptor de la API en un formato estandarizado (OpenAPI).
+4. Escaneos automatizados y manuales con OWASP ZAP.
+5. Explotación de vulnerabilidades encontradas en el punto 4.
+
+
 ## 1. EXPLORACIÓN MANUAL MEDIANTE NAVEGADORES WEB
 
 Para esto se emplearán:
@@ -14,7 +49,7 @@ Las direcciones que se van a explorar son las siguientes:
 - "/docs": el manual de Damn Vulnerable RESTaurant sugiere que aquí hay documentación de la API en Swagger.
 - "/redoc": el manual de Damn Vulnerable RESTaurant sugiere que aquí hay documentación de la API en ReDoc.
 
-## 1.1. EXPLORACIÓN MANUAL CON MOZILLA FIREFOX
+### 1.1. EXPLORACIÓN MANUAL CON MOZILLA FIREFOX
 
 "/":
 
@@ -32,7 +67,7 @@ Las direcciones que se van a explorar son las siguientes:
 
 !["/redoc"](./recursos/1-8.png)
 
-## 1.2. EXPLORACIÓN MANUAL CON GOOGLE CHROME
+### 1.2. EXPLORACIÓN MANUAL CON GOOGLE CHROME
 
 "/":
 
@@ -51,7 +86,7 @@ Las direcciones que se van a explorar son las siguientes:
 !["/redoc"](./recursos/1-5.png)
 
 
-# 1.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
+### 1.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
 
 1. Se pudo obtener la documentación del uso de la API a través de los enlaces /docs y /redoc. Además se puede obtener la especificación OpenAPI, que será muy útil para la sección 2. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO de este trabajo.
 
@@ -66,25 +101,51 @@ Para este trabajo se empleará ZAP v2.16.0.
 
 Se dejará activado el escáner pasivo, ya que permite realizar una auditoría de forma más rápida y controlada, esto es que en la medida que se avanza manualmente, el escáner pasivo hará tareas en segundo plano para detectar posibles vulnerabilidades. La configuración de este quedará así para este trabajo:
 
-Passive Scan Rules:
+### 2.1.1. PASSIVE SCANNER
+
+#### Passive Scan Rules:
+
+Se dejarán todos los valores por defecto, y esto es:
 
 - Threshold = Medium para todos los tests, no importando el status (beta, alpha o release).
 
-Passive scan tags:
+!["passive scan rules"](./recursos/2/1.png)
+
+#### Passive scan tags:
+
+Se dejarán todos los valores por defecto, y esto es:
 
 - Todas habilitadas (enabled).
 
-Passive scanner:
+!["passive scan tags"](./recursos/2/2.png)
 
-- Solo escanear lo que esté en la cobertura definida (scope).
+#### Passive scanner:
+
+Se dejarán todos los valores por defecto, y esto es:
+
+- Se ecanearán todos los mensajes (incluso fuera de la cobertura (scope)).
 - No incluirá tráfico del fuzzer durante escaneo pasivo.
 - 3 hilos para escaneo pasivo.
 - Alertas y tamaño del cuerpo en bytes para escanear sin límites.
 
+!["passive scanner"](./recursos/2/3.png)
+
+### 2.1.2. MODO DE ZAP
+
+Se trabajará en modo estándar (Standard Mode).
+
+### 2.1.3. VALUE GENERATOR
+
+Esta configuración es importante también, porque a pesar de que se puede dejar por defecto, añadirle valores puede ayudar a mejorar la auditoría, haciéndola personalizada en las búsquedas y ataques. El add-on OpenAPI, que se usará en el punto 2.2, la usa durante la importación de una definición, otra razón más para configurarla correctamente. Algunos campos que no estén definidos serán rellenados por valores que tiene este generador por defecto en ZAP, por ejemplo "John Due".
+
+Además de los que están por defecto, se pondrá uno adicional llamado "id" con valor "1".
+
+!["value generator id"](./recursos/2/4.png)
+
 
 ### 2.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
 
-Como la documentación permite obtener este documento y ZAP permite su importación, se realizará para agilizar los ataques.
+Como la documentación permite obtener este documento y ZAP permite su importación, se realizará para agilizar los ataques. Durante la auditoría de una API, esto es un requisito mínimo para poder realizarla.
 
 ![](./recursos/2-1.png)
 
@@ -96,39 +157,13 @@ Como la documentación permite obtener este documento y ZAP permite su importaci
 
 ![](./recursos/2-5.png)
 
-### 2.3. EXPLORACIÓN DE RUTAS CON ZAP
 
-Las siguientes imágenes muestran los resultados de la exploración con la herramienta ZAP de las rutas proporcionadas por la documentación:
+### 2.3. ANÁLISIS DE 
 
-![](./recursos/2-6.png)
 
-![](./recursos/2-7.png)
 
-![](./recursos/2-8.png)
 
-![](./recursos/2-9.png)
 
-![](./recursos/2-10.png)
-
-![](./recursos/2-11.png)
-
-![](./recursos/2-12.png)
-
-![](./recursos/2-13.png)
-
-![](./recursos/2-14.png)
-
-![](./recursos/2-15.png)
-
-![](./recursos/2-16.png)
-
-![](./recursos/2-17.png)
-
-![](./recursos/2-18.png)
-
-![](./recursos/2-19.png)
-
-![](./recursos/2-20.png)
 
 
 ### 2.4. CONCLUSIÓN DE ESCANEO AUTOMATIZADO
