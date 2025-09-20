@@ -26,16 +26,56 @@ Como es un ejercicio de una API pequeña (ver su documentación en el README.md 
 - Máquina virtual con Kali Linux, que ya trae OWASP ZAP, que corre en VirtualBox v7.1.12
 - El computador estará conectado a una red LAN gobernada por un router, que le asignará las direcciones IP dinámicamente tanto al anfitrión como a la MV.
 
-### 1.2. ESTRATEGIA
+### 1.2. ESTRATEGIA DE LA PRUEBA
 
-1. Se despliega la API con docker compose en el anfitrión.
+1. Preparación de la prueba. Se despliega la API con docker compose en el anfitrión. En el mismo computador, se ejecuta una MV con Kali Linux, que ya trae OWASP ZAP.
 2. Se hace una exploración manual usando los navegadores Google Chrome y Mozilla Firefox apuntando a unas direcciones definidas.
 3. Para el caso de encontrar documentación (Swagger por ejemplo), se intentará descargar la especificación OpenAPI. Si no la tuviere o no se pudiere encontrar, entonces lo que se haría en la vida real sería preguntar sobre el descriptor de la API en un formato estandarizado (OpenAPI).
 4. Escaneos automatizados y manuales con OWASP ZAP.
-5. Explotación de vulnerabilidades encontradas en el punto 4.
+5. Explotación de vulnerabilidades encontradas en el punto 4 y si la explotación lo permite, iterar desde el punto 4 para escalar privilegios en la misma API (tipo de usuario).
 
 
-## 1. EXPLORACIÓN MANUAL MEDIANTE NAVEGADORES WEB
+## 2. EJECUCIÓN DE LA ESTRATEGIA DE LA PRUEBA
+
+### 2.1. PREPARACIÓN DE LA PRUEBA
+
+#### DESPLIEGUE DE LA API
+
+El repo de la API a probar es el siguiente:
+
+~~~
+https://github.com/theowni/Damn-Vulnerable-RESTaurant-API-Game.git
+~~~
+
+Se realiza la descarga en una carpeta del usuario usando git clone:
+
+~~~
+$ git clone https://github.com/theowni/Damn-Vulnerable-RESTaurant-API-Game.git
+~~~
+
+Y en la documentación (README.md) aparecen las instrucciones para desplegar la API, pero se realizó una pequeña modificación al docker-compose.yml para que la base de datos quede en la misma carpeta del repo. De esta manera es posible borrarla usando:
+
+~~~
+$ sudo rm -r ./postgres_data
+~~~
+
+Cada vez que se requiera. Esto se puede hacer cuando la API no está desplegada. PAra el caso en que lo esté, toca desinstalar el despliegue usando:
+
+Usando docker compose v2:
+~~~
+$ docker compose down
+~~~
+O usando docker compose v1:
+~~~
+$ docker-compose down
+~~~
+
+#### MÁQUINA VIRTUAL (MV) DE KALI LINUX
+
+Usando VirtualBox v7 se despliega una máquina virtual cuya imagen se puede conseguir en el sitio oficial de Kali Linux. Con 3 núcleos de procesador y 8 GB de RAM se trabaja bien.
+
+
+### 2.2. EXPLORACIÓN MANUAL MEDIANTE NAVEGADORES WEB
 
 Para esto se emplearán:
 
@@ -49,7 +89,7 @@ Las direcciones que se van a explorar son las siguientes:
 - "/docs": el manual de Damn Vulnerable RESTaurant sugiere que aquí hay documentación de la API en Swagger.
 - "/redoc": el manual de Damn Vulnerable RESTaurant sugiere que aquí hay documentación de la API en ReDoc.
 
-### 1.1. EXPLORACIÓN MANUAL CON MOZILLA FIREFOX
+### 2.2.1. EXPLORACIÓN MANUAL CON MOZILLA FIREFOX
 
 "/":
 
@@ -67,7 +107,7 @@ Las direcciones que se van a explorar son las siguientes:
 
 !["/redoc"](./recursos/1-8.png)
 
-### 1.2. EXPLORACIÓN MANUAL CON GOOGLE CHROME
+### 2.2.2. EXPLORACIÓN MANUAL CON GOOGLE CHROME
 
 "/":
 
@@ -86,18 +126,18 @@ Las direcciones que se van a explorar son las siguientes:
 !["/redoc"](./recursos/1-5.png)
 
 
-### 1.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
+### 2.2.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
 
 1. Se pudo obtener la documentación del uso de la API a través de los enlaces /docs y /redoc. Además se puede obtener la especificación OpenAPI, que será muy útil para la sección 2. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO de este trabajo.
 
 2. Llama la atención aquí es que Firefox incluye dos barras de opciones adicionales para poder interactuar mejor con la API (ver "/" y "/admin").
 
 
-## 2. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO
+## 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO
 
-Para este trabajo se empleará ZAP v2.16.0.
+Para este trabajo se empleará OWASP ZAP v2.16.0.
 
-### 2.1. CONFIGURACIÓN DE ZAP
+### 2.1. CONFIGURACIÓN DE OWASP ZAP
 
 Se dejará activado el escáner pasivo, ya que permite realizar una auditoría de forma más rápida y controlada, esto es que en la medida que se avanza manualmente, el escáner pasivo hará tareas en segundo plano para detectar posibles vulnerabilidades. La configuración de este quedará así para este trabajo:
 
