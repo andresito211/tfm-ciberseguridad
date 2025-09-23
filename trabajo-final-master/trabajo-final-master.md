@@ -19,11 +19,13 @@ Con estos datos, lo mínimo que se requiere es:
 
 - Un computador adicional que tenga OWASP ZAP instalado o una máquina virtual con Kali Linux, que ya lo trae por defecto.
 
+- Documentación de las funcionalidades de la API (por ejemplo, Swagger OpenAPI).
+
 Como es un ejercicio de una API pequeña (ver su documentación en el README.md en su repo: https://github.com/theowni/Damn-Vulnerable-RESTaurant-API-Game.git), con un computador con la siguiente configuración es suficiente:
 
 - Hardware: procesador Intel Core i7 10750H, 32 GB de RAM y 240 GB de almacenamiento.
 - SO anfitrión: Ubuntu 24.04, con docker y docker compose.
-- Máquina virtual con Kali Linux, que ya trae OWASP ZAP, que corre en VirtualBox v7.1.12
+- Máquina virtual con Kali Linux, que ya trae OWASP ZAP, que corre en VirtualBox v7.1.12. Para este trabajo se empleará OWASP ZAP v2.16.0.
 - El computador estará conectado a una red LAN gobernada por un router, que le asignará las direcciones IP dinámicamente tanto al anfitrión como a la MV.
 
 ### 1.2. ESTRATEGIA DE LA PRUEBA
@@ -32,7 +34,7 @@ Como es un ejercicio de una API pequeña (ver su documentación en el README.md 
 2. Se hace una exploración manual usando los navegadores Google Chrome y Mozilla Firefox apuntando a unas direcciones definidas.
 3. Para el caso de encontrar documentación (Swagger por ejemplo), se intentará descargar la especificación OpenAPI. Si no la tuviere o no se pudiere encontrar, entonces lo que se haría en la vida real sería preguntar sobre el descriptor de la API en un formato estandarizado (OpenAPI).
 4. Escaneos automatizados y manuales con OWASP ZAP.
-5. Explotación de vulnerabilidades encontradas en el punto 4 y si la explotación lo permite, iterar desde el punto 4 para escalar privilegios en la misma API (tipo de usuario).
+5. Explotación de vulnerabilidades encontradas en el punto 4 y si la explotación lo permite, iterar desde el punto 4 para escalar privilegios en la misma API (tipo de usuario). Se le dará prioridad a aquellas vulnerabilidades que permitan la escalada de privilegios, por ejemplo, que un usuario de cierto rol pueda realizar cosas que no debería.
 
 
 ## 2. EJECUCIÓN DE LA ESTRATEGIA DE LA PRUEBA
@@ -128,20 +130,26 @@ Las direcciones que se van a explorar son las siguientes:
 
 ### 2.2.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
 
-1. Se pudo obtener la documentación del uso de la API a través de los enlaces /docs y /redoc. Además se puede obtener la especificación OpenAPI, que será muy útil para la sección 2. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO de este trabajo.
+1. Se pudo obtener la documentación del uso de la API a través de los enlaces /docs y /redoc. Además se puede obtener la especificación OpenAPI, que será muy útil para la sección 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO INICIAL: ESPECIFICACIÓN DE LA API de este trabajo.
 
 2. Llama la atención aquí es que Firefox incluye dos barras de opciones adicionales para poder interactuar mejor con la API (ver "/" y "/admin").
 
 
-## 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO
+## 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO INICIAL: ESPECIFICACIÓN DE LA API
 
-Para este trabajo se empleará OWASP ZAP v2.16.0.
+Para un caso de la vida real la idea es que el equipo de trabajo que desarrolla la API entregue una documentación de esta especificación, ya sea como un archivo, o si es una empresa que sigue los estándares de una API RESTful se pueda conseguir mediante un enlace, por ejemplo "/docs" o "/redoc". Para esta caso en particular, los desarrolladores sí han suministrado este recurso y se puede descargar efectivamente mediante los enlaces "/docs" o "/redoc" (ver README.md de la API), aunque también fueron descubiertos en el punto 2.2 EXPLORACIÓN MANUAL.
 
-### 2.1. CONFIGURACIÓN DE OWASP ZAP
+### 2.4. ESCANEOS AUTOMATIZADOS Y MANUALES CON OWASP ZAP
+
+OWASP ZAP es el programa principal que se utilizará para realizar la prueba de penetración en esta API, que implica escaneos automatizados y manuales, así como técnicas de escaneo activo (peticiones con con cargas pagas envenenadas), pasivo (solo revisión de vulnerabilidades en cuyas transacciones peticiones-respuesta pueda haber revelación de información delicada, sea técnica por ejemplo Cookie sin HttpOnly o la permitividd de inclusiones de scripts en dominios cruzados, así como secretos).
+
+### 2.4.1. CONFIGURACIÓN DE OWASP ZAP
+
+Lo primero que hay que hacer es configurar el programa para prepararlo para las pruebas. Con esto habrá la seguridad de sobre qué se está trabajando y qué resultados esperarse durante las pruebas, ya que esto define el comportamiento del programa para la realización de estas.
 
 Se dejará activado el escáner pasivo, ya que permite realizar una auditoría de forma más rápida y controlada, esto es que en la medida que se avanza manualmente, el escáner pasivo hará tareas en segundo plano para detectar posibles vulnerabilidades. La configuración de este quedará así para este trabajo:
 
-### 2.1.1. PASSIVE SCANNER
+### 2.4.1.1. PASSIVE SCANNER
 
 #### Passive Scan Rules:
 
@@ -170,20 +178,17 @@ Se dejarán todos los valores por defecto, y esto es:
 
 !["passive scanner"](./recursos/2/3.png)
 
-### 2.1.2. MODO DE ZAP
+### 2.4.1.2. MODO DE ZAP
 
-Se trabajará en modo estándar (Standard Mode).
+Se trabajará en modo estándar (Standard Mode). Se habría podido utilizar el modo de ataque (ATTACK mode), pero habría que estar pendiente de las configuraciones del escáner activo, ya que podría en ciertos casos consumir más recursos de los necesarios, además de que hay que reconocer que se necesita experticia para esto.
 
-### 2.1.3. VALUE GENERATOR
+### 2.4.1.3. VALUE GENERATOR
 
-Esta configuración es importante también, porque a pesar de que se puede dejar por defecto, añadirle valores puede ayudar a mejorar la auditoría, haciéndola personalizada en las búsquedas y ataques. El add-on OpenAPI, que se usará en el punto 2.2, la usa durante la importación de una definición, otra razón más para configurarla correctamente. Algunos campos que no estén definidos serán rellenados por valores que tiene este generador por defecto en ZAP, por ejemplo "John Due".
-
-Además de los que están por defecto, se pondrá uno adicional llamado "id" con valor "1".
-
-!["value generator id"](./recursos/2/4.png)
+Esta configuración es importante también, porque a pesar de que se puede dejar por defecto, añadirle valores puede ayudar a mejorar la auditoría, haciéndola personalizada en las búsquedas y ataques. El add-on OpenAPI, que se usará en el punto 2.3, la usa durante la importación de una definición, otra razón más para configurarla correctamente. Algunos campos que no estén definidos serán rellenados por valores que tiene este generador por defecto en ZAP, por ejemplo "John Due".
 
 
-### 2.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
+
+### 2.4.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
 
 Como la documentación permite obtener este documento y ZAP permite su importación, se realizará para agilizar los ataques. Durante la auditoría de una API, esto es un requisito mínimo para poder realizarla.
 
@@ -198,19 +203,39 @@ Como la documentación permite obtener este documento y ZAP permite su importaci
 ![](./recursos/2-5.png)
 
 
-### 2.3. ANÁLISIS DE 
+### 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API
+
+Como se había dicho previamente durante la configuración del OWASP ZAP en el punto 2.4.1.3. VALUE GENERATOR, el addon que importa el archivo OpenAPI.json realiza un escaneo activo breve a cada URL descrita en dicho descriptor, lo cual implica que le haya pasado una carga paga envenenada con información, así que es posible que haya podido incluso modificado la información que está almacenada en la base de datos (sea añadido, editado o borrado). Se revisará cada una de las URL, y se revisará qué tipo de respuesta se ha obtenido para cada una, así como las alertas obtenidas predeterminadas.
+
+Lo primero que hay que revisar es ver si en el historial ha habido peticiones que se han respondido satisfactoriamente, es decir, aquellas cuyo código de estado HTTP es 2xx:
 
 
+![](./recursos/2/4.png)
+
+Se pueden ver 4 respuestas con este código. Llama mucho la atención una que tiene código 201 que es cuando se crea una entidad y se almacena en la base de datos. Algunas deberían ser posibles de realizar desde un usuario invitado, pero otras no. Hay que revisar si este es el caso:
+
+![](./recursos/2/5.png)
+
+Se puede apreciar que es el registro de un cliente, lo cual es una actividad común y prácticamente fundamental en un programa en el que se gestiona un restaurante, pues cualquiera que esté en Internet podría acceder y tener la capacidad de poder registrarse. Si se tratara de un usuario cuyos privilegios son más altos (por ejemplo un empleado o alguien de cargo más alto, o que tenga más responsabilidad sobre el sistema), sería algo para marcar como una "vulnerabilidad al escalamiento de privilegios". Pero, por defecto, el usuario ha sido designado como cliente. A partir de este momento se revisará cuál es el alcance de un usuario cliente o "Customer", accediendo como este y explorando todos los enlaces de la API, a ver si se encuentra una abertura hacia una escalada de privilegios.
+
+Analizando las alertas, hay unas que llaman la atención, por ejemplo la tecnología utilizada para el despliegue expuesta en las respuestas. Esto añade información para poder realizar ataques más precisos y menos demorados en alcanzar:
 
 
+![](./recursos/2/6.png)
 
+Se tiene entonces que el framework es FastAPI v0.103.0, que trabaja sobre Python v3.10. A continuación, se mostrará la información que hay en https://www.cvedetails.com/ al día de hoy 23 de septiembre de 2025 con respecto a estas tecnologías:
 
+Respecto a FastAPI, no hay vulnerabilidades encontradas para la v0.103.0:
 
-### 2.4. CONCLUSIÓN DE ESCANEO AUTOMATIZADO
+![](./recursos/2/7.png)
 
-- Se encontró que se puede conocer las tecnologías que usa el servicio web, en "/healthchecker".
-- En 4 rutas se encontró que la cabecera de X-Content-Type-Options está ausente.
-- En la ruta /menu, es posible acceder al menú sin estar autenticado. Puede que sea a propósito para que cualquiera pueda visualizar la página.
+Respecto a Python, no hay resgistro de vulnerabilidades para la v3.10.18:
+
+![](./recursos/2/8.png)
+
+### 2.4.4. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CUSTOMER"
+
+En el punto 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API se ha creado un usuario de rol "customer".
 
 ## 3. EXPLORACIÓN MANUAL
 
