@@ -186,7 +186,14 @@ Se trabajará en modo estándar (Standard Mode). Se habría podido utilizar el m
 
 Esta configuración es importante también, porque a pesar de que se puede dejar por defecto, añadirle valores puede ayudar a mejorar la auditoría, haciéndola personalizada en las búsquedas y ataques. El add-on OpenAPI, que se usará en el punto 2.3, la usa durante la importación de una definición, otra razón más para configurarla correctamente. Algunos campos que no estén definidos serán rellenados por valores que tiene este generador por defecto en ZAP, por ejemplo "John Due".
 
+### 2.4.1.4. SCRIPTS
 
+Cualquier script generado desde "HTTP Sender" debe estar deshabilitado:
+
+
+!["Script HTTP Sender deshabilitado"](./recursos/2/3_1.png)
+
+Si no se deshabilita, la API podría interpretarlo como peticiones de un usuario registrado y autorizado. Aquí la idea es hacer las peticiones como si fuera un usuario invitado o no registrado (público).
 
 ### 2.4.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
 
@@ -216,7 +223,7 @@ Se pueden ver 4 respuestas con este código. Llama mucho la atención una que ti
 
 ![](./recursos/2/5.png)
 
-Se puede apreciar que es el registro de un cliente, lo cual es una actividad común y prácticamente fundamental en un programa en el que se gestiona un restaurante, pues cualquiera que esté en Internet podría acceder y tener la capacidad de poder registrarse. Si se tratara de un usuario cuyos privilegios son más altos (por ejemplo un empleado o alguien de cargo más alto, o que tenga más responsabilidad sobre el sistema), sería algo para marcar como una "vulnerabilidad al escalamiento de privilegios". Pero, por defecto, el usuario ha sido designado como cliente. A partir de este momento se revisará cuál es el alcance de un usuario cliente o "Customer", accediendo como este y explorando todos los enlaces de la API, a ver si se encuentra una abertura hacia una escalada de privilegios.
+Se puede apreciar que es el registro de un cliente, lo cual es una actividad común y prácticamente fundamental en un programa en el que se gestiona un restaurante, pues cualquiera que esté en Internet podría acceder y tener la capacidad de poder registrarse. Si se tratara de un usuario cuyos privilegios son más altos (por ejemplo un empleado o alguien de cargo más alto, o que tenga más responsabilidad sobre el sistema), sería algo para marcar como una "vulnerabilidad al escalamiento de privilegios". Pero, por defecto, el usuario ha sido designado como cliente.
 
 Analizando las alertas, hay unas que llaman la atención, por ejemplo la tecnología utilizada para el despliegue expuesta en las respuestas. Esto añade información para poder realizar ataques más precisos y menos demorados en alcanzar:
 
@@ -235,7 +242,46 @@ Respecto a Python, no hay resgistro de vulnerabilidades para la v3.10.18:
 
 ### 2.4.4. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CUSTOMER"
 
-En el punto 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API se ha creado un usuario de rol "customer".
+ A partir de este momento, se revisará cuál es el alcance de un usuario cliente o "Customer", accediendo como este y explorando todos los enlaces de la API, a ver si se encuentra una abertura hacia una escalada de privilegios.
+
+En el punto 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API se ha creado un usuario de rol "customer", cuando se realizó la importación del descriptor de la API en OpenAPI, cuyos campos y valores respectivos son:
+
+~~~
+{"username":"John Doe","phone_number":"John Doe","first_name":"John Doe","last_name":"John Doe","role":"Customer"}
+~~~
+
+
+Para poder realizar las peticiones desde el usuario "John Doe" que es de rol "Customer" usando las herramientas como el escaneo activo o el fuzzer, hay que configurar el programa primero, y se hace siguiendo el siguiente procedimiento:
+
+1. Identificar método de autenticación: esto es crucial, ya que de este depende el punto 2.
+2. Crear 2 scripts: uno de autenticación (basado en Authentication) y otro de emisor de mensajes (basado en HTTP Sender).
+3. Configurar la sesión actual: la sesión actual tiene un contexto por defecto, que lo único que se le ha hecho es añadirle las direcciones provistas por el descriptor de la API previamente importado en el punto 2.4.2. Se creará un contexto llamado "Customer", que permitirá hacer peticiones desde un usuario "Customer" en este caso llamado "John Doe". Entonces se le añadirán las direcciones de la API, y se configurará la autenticación (Authentication), los usuarios (Users), el usuario forzado (Forced User) y la gestión de la sesión (Session Management).
+
+#### 2.4.4.1. MÉTODO DE AUTENTICACIÓN
+
+Para conocer cómo funciona este método, se revisará en la documentación (/docs o /redoc), cuál es la funcionalidad que permite la autenticación. Si se exploran las API, hay una que se llama "auth" y seguramente debe tener esta funcionalidad, es decir, que pida un usuario y contraseña como argumentos. Para este caso, la que coincide con estas características es la función "token", de tipo "POST":
+
+![](./recursos/2/9.png)
+
+Esta operación se hace manual, utilizando el solicitador de peticiones de OWASP ZAP (Requester). Lo que se hará es enviar una solicitud, utilizando de plantilla la que ya envió por primera vez cuando se importó el descriptor de la API. Ya había lanzado un error, pues las credenciales no coincidían:
+
+![](./recursos/2/10.png)
+
+![](./recursos/2/11.png)
+
+Se aprecia que el cuerpo está codificado como application/x-www-form-urlencoded. Se modificará el cuerpo para poner las credenciales de "John Due" y para corregir el "grant_type", que puede ser con una cadena de caracteres con valor "password". Se empleará el cuerpo (Body) en forma de tabla (Table) para que sea más cómoda la edición. Una vez editado, al hacer clic en "Send" se tiene la siguiente respuesta:
+
+![](./recursos/2/12.png)
+
+Es como dice en la documentación. Se recibieron 2 cadenas de caracteres (strings), una llamada "access_token" y otra llamada "token_type". Entonces se tiene que el método de autenticación se hace solicitando un token de tipo **"bearer"**, lo cual indica que lo más probable es que se esté utilizando el framework de autenticación **OAuth 2.0**. Sabiendo esto, el plan para el punto 2 es utilizar un script que sea capaz de manejar tokens tipo bearer.
+
+
+
+#### 2.4.4.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
+
+y esto se hace a través de dos scripts:
+
+1. Está basado en Authentication, y se va a llamar "REST-API-Bearer_auth.js". Este se va a ejecutar cada vez que se haga una solicitud a la API.
 
 ## 3. EXPLORACIÓN MANUAL
 
