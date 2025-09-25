@@ -139,7 +139,7 @@ Las direcciones que se van a explorar son las siguientes:
 
 Para un caso de la vida real la idea es que el equipo de trabajo que desarrolla la API entregue una documentación de esta especificación, ya sea como un archivo, o si es una empresa que sigue los estándares de una API RESTful se pueda conseguir mediante un enlace, por ejemplo "/docs" o "/redoc". Para esta caso en particular, los desarrolladores sí han suministrado este recurso y se puede descargar efectivamente mediante los enlaces "/docs" o "/redoc" (ver README.md de la API), aunque también fueron descubiertos en el punto 2.2 EXPLORACIÓN MANUAL.
 
-### 2.4. ESCANEOS AUTOMATIZADOS Y MANUALES CON OWASP ZAP
+## 2.4. ESCANEOS AUTOMATIZADOS Y MANUALES CON OWASP ZAP
 
 OWASP ZAP es el programa principal que se utilizará para realizar la prueba de penetración en esta API, que implica escaneos automatizados y manuales, así como técnicas de escaneo activo (peticiones con con cargas pagas envenenadas), pasivo (solo revisión de vulnerabilidades en cuyas transacciones peticiones-respuesta pueda haber revelación de información delicada, sea técnica por ejemplo Cookie sin HttpOnly o la permitividd de inclusiones de scripts en dominios cruzados, así como secretos).
 
@@ -240,9 +240,138 @@ Respecto a Python, no hay resgistro de vulnerabilidades para la v3.10.18:
 
 ![](./recursos/2/8.png)
 
-### 2.4.4. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CUSTOMER"
+### 2.4.4. EXPLORACIÓN MANUAL DE LAS DIRECCIONES QUE CONTIENEN PARÁMETROS EN LA RUTA DE LA URL EN BÚSQUEDA DE IDOR
 
- A partir de este momento, se revisará cuál es el alcance de un usuario cliente o "Customer", accediendo como este y explorando todos los enlaces de la API, a ver si se encuentra una abertura hacia una escalada de privilegios.
+Es importante saber si las rutas de URL que apuntan a recursos están seguras. Las rutas de URL que apuntan a recursos tienen el siguiente formato:
+
+~~~
+GET dir_web/api/{id_de_recurso}
+~~~
+
+Por ejemplo, la siguiente petición debería devolver como resultado una orden cuya id = order_id:
+
+~~~
+GET http://192.168.2.92:8091/orders/{order_id}
+~~~
+
+
+Hay casos en los que se puede suceder (y no debería) en los que se puede hacer una solicitud de tipo POST, PUT, DELETE o cualquiera que implique la modficación en la base de datos sin estar autorizados, y a veces sin siquiera preguntar si el usuario está seguro de desear hacerlo. A esto se le conoce como **referencia directa a objeto insegura** o en inglés *Insecure Direct Object Reference* o simplemente el acrónimo **IDOR**. Si fuera una API más grande, valdría la pena automatizar el proceso para que el escáner activo las busque por nosotros, pero como son pocas las direcciones que permiten realizar esta operación, esto se hará manualmente.
+
+
+![](./recursos/2/8-1.png)
+
+De la imagen anterior se deducen las siguientes funciones:
+
+~~~
+DELETE /menu/{item_id}
+PUT /menu/{item_id}
+GET /orders/{order_id}
+~~~
+
+Aunque son más de interés aquellas que modifiquen datos en la BB.DD., se harán también las que se hagan con GET. Esto es porque para cuando se haga el escaneo activo, el programa sepa de antemano que hay direcciones que se pueden atacar con solo ponerle el id del recurso.
+
+Se aprovechará la misma carga paga en el cuerpo que se le ha enviado en el momento de hacer la importación del descriptor de la API.
+
+Resultado para DELETE /menu/{item_id}:
+
+![](./recursos/2/8-2.png)
+
+Resultado para PUT /menu/{item_id}
+
+![](./recursos/2/8-3.png)
+
+Resultado para GET /orders/{order_id}
+
+![](./recursos/2/8-4.png)
+
+Como se ha podido ver, ninguna petición ha sido aprobada por falta de autenticación y, por ende, de autorización.
+
+### 2.4.5. ESCANEO ACTIVO DE LA API
+
+Este es un buen momento para hacer un escaneo activo, ya que hay suficientes recursos a probar, y que el programa ya los conoce de antemano. Pero antes, hay que hacer algunas configuraciones al programa para hacer que el escaneo sea breve, pero efectivo.
+
+#### 2.4.5.1. CONFIGURACIÓN DE OWASP ZAP ANTES DEL ESCANEO ACTIVO
+
+Las configuraciones son las siguientes:
+
+1. Todas las rutas por debajo de http://192.168.2.92:8091 (donde se desplegó la API) estarán en el contexto por defecto (default context):
+
+![](./recursos/2/8-5-1.png)
+![](./recursos/2/8-5-2.png)
+
+2. El contexto por defecto tendrá configurada la sección de tecnología (technology) así:
+
+- Para DB, PostgreSQL.
+- Para el lenguaje, Python.
+- Para OS, Linux.
+- La gestión de código fuente (SCM) y el servidor web (WS) se dejaran por defecto activos todos.
+
+![](./recursos/2/8-6.png)
+
+Con esto se reduce la cantidad de peticiones y el tiempo de la prueba, ya que se reduce a una cobertura más precisa con relación a la API.
+
+3. El escáner activo usará la política de escaneo "API". Con esto se reduce aún más el tiempo y la cobertura se vuelve más precisa de cara a la prueba de la API, ya que no será necesario realizar pruebas relacionadas con un navegador web (nodo de cliente).
+
+![](./recursos/2/8-7-1.png)
+![](./recursos/2/8-7-2.png)
+
+La cobertura (scope) del escaneo quedará entonces en el contexto por defecto, ya configurado previamente, y el escaneo será recursivo, para que explore todos los enlaces que tiene por debajo (recurse):
+
+
+![](./recursos/2/8-8.png)
+
+#### 2.4.5.2. PRIMER ESCANEO ACTIVO
+
+Una vez hecho esto, ya el programa estará preparado para el escaneo como se desea. A continuación, se muestran dos resúmenes gráficos del escaneo activo:
+
+![](./recursos/2/8-9-1.png)
+
+![](./recursos/2/8-9-2.png)
+
+De la imagen donde está la gráfica de r/s contra tiempo, están graficadas los 5 tipos de respuestas HTTP, que van de 1xx a 5xx. Se pondrá más atención a aquellas que son 2xx (verde), ya que significa que hubo peticiones que se respondieron correctamente y 5xx (rojo), que son aquellas que el servidor no pudo manejar al punto de ocasionarle un error interno.
+
+Para el caso de las 2xx, es para ver si dichas peticiones tienen correspondencia con lo que está autorizado para el usuario invitado:
+
+![](./recursos/2/8-10.png)
+
+De las peticiones que implican modificación (POST), aquellas que respondieron con 2xx simplemente ha sido una notificación para validar el cambio de la contraseña.
+
+
+Para el caso de las 5xx, es para ver si existe la posibilidad de que haya una vulnerabilidad que podría ser grave, al punto de poder efectuar incluso cambios en el sistema (ejecuciones con privilegios demasiado altos).
+
+![](./recursos/2/8-11.png)
+
+Solo hubo una petición, y no se le ha inyectado ninguna carga paga que implique una inyección de comandos, ni de SQL. Solo parece que no pudo manejar el valor "\u0000" en username, que sería una nota a tener en cuenta para que se mejore la presentación de la API. Se emitirá una alerta de información para que cuando se genere el reporte, aparezca.
+
+#### 2.4.5.3. CREACIÓN DE ALERTA MANUAL
+
+
+En el punto anterior se evidenció un error interno en el servidor porque no fue capaz de manejar correctamente un campo en la api que permite reiniciar la contraseña. Para la generación de una alerta, se siguen los siguientes pasos:
+
+Se crea la nueva alerta:
+![](./recursos/2/8-12-1.png)
+
+Se especifica de qué se trata, parámetros y la evidencia.:
+![](./recursos/2/8-12-2.png)
+
+En la lista de alertas (Alerts) debe aparecer como una con bandera azul, ya que es a modo de información:
+![](./recursos/2/8-12-3.png)
+
+### 2.4.6. PERSISTENCIA DE LA SESIÓN
+
+Cuando se inició este proyecto, no se había considerado el hecho de persistir la sesión, pero dado a que ya hay mucho trabajo realizado, vale la pena guardar los cambios hechos en una sesión, que seguirá creciendo en la medida que se sigan creando y ejecutando más pruebas, así como alertas para el reporte final.
+
+Paso 1:
+![](./recursos/2/8-13-1.png)
+Paso 2:
+![](./recursos/2/8-13-2.png)
+Paso 3:
+![](./recursos/2/8-13-3.png)
+
+
+### 2.4.7. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CUSTOMER"
+
+A partir de este momento, se revisará cuál es el alcance de un usuario cliente o "Customer", accediendo como este y explorando todos los enlaces de la API, a ver si se encuentra una abertura hacia una escalada de privilegios.
 
 En el punto 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API se ha creado un usuario de rol "customer", cuando se realizó la importación del descriptor de la API en OpenAPI, cuyos campos y valores respectivos son:
 
@@ -257,7 +386,7 @@ Para poder realizar las peticiones desde el usuario "John Doe" que es de rol "Cu
 2. Crear 2 scripts: uno de autenticación (basado en Authentication) y otro de emisor de mensajes (basado en HTTP Sender).
 3. Configurar la sesión actual: la sesión actual tiene un contexto por defecto, que lo único que se le ha hecho es añadirle las direcciones provistas por el descriptor de la API previamente importado en el punto 2.4.2. Se creará un contexto llamado "Customer", que permitirá hacer peticiones desde un usuario "Customer" en este caso llamado "John Doe". Entonces se le añadirán las direcciones de la API, y se configurará la autenticación (Authentication), los usuarios (Users), el usuario forzado (Forced User) y la gestión de la sesión (Session Management).
 
-#### 2.4.4.1. MÉTODO DE AUTENTICACIÓN
+#### 2.4.5.1. MÉTODO DE AUTENTICACIÓN
 
 Para conocer cómo funciona este método, se revisará en la documentación (/docs o /redoc), cuál es la funcionalidad que permite la autenticación. Si se exploran las API, hay una que se llama "auth" y seguramente debe tener esta funcionalidad, es decir, que pida un usuario y contraseña como argumentos. Para este caso, la que coincide con estas características es la función "token", de tipo "POST":
 
@@ -277,14 +406,21 @@ Es como dice en la documentación. Se recibieron 2 cadenas de caracteres (string
 
 
 
-#### 2.4.4.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
+#### 2.4.5.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
 
 y esto se hace a través de dos scripts:
 
 1. Está basado en Authentication, y se va a llamar "REST-API-Bearer_auth.js". Este se va a ejecutar cada vez que se haga una solicitud a la API.
 
 
-#### 2.4.4.3. CONFIGURAR LA SESIÓN ACTUAL
+#### 2.4.5.3. CONFIGURAR LA SESIÓN ACTUAL
+
+
+
+
+
+
+
 
 
 ## 3. EXPLORACIÓN MANUAL
