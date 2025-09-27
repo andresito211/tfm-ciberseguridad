@@ -37,7 +37,7 @@ Como es un ejercicio de una API pequeña (ver su documentación en el README.md 
 5. Explotación de vulnerabilidades encontradas en el punto 4 y si la explotación lo permite, iterar desde el punto 4 para escalar privilegios en la misma API (tipo de usuario). Se le dará prioridad a aquellas vulnerabilidades que permitan la escalada de privilegios, por ejemplo, que un usuario de cierto rol pueda realizar cosas que no debería.
 
 
-## 2. EJECUCIÓN DE LA ESTRATEGIA DE LA PRUEBA
+## 2. EJECUCIÓN DE LA ESTRATEGIA PARA LA PRUEBA
 
 ### 2.1. PREPARACIÓN DE LA PRUEBA
 
@@ -609,31 +609,70 @@ function responseReceived(msg, initiator, helper) {}
 #### 2.4.5.3. CONFIGURAR LA SESIÓN ACTUAL
 
 
+Finalmente se hará un nuevo contexto llamado "Customer", desde el que se harán peticiones con el usuario "John Doe", que actualmente es "Customer". Para esto, primero se creará el nuevo contexto:
 
+![](./recursos/2/13-1.png)
 
+![](./recursos/2/13-2.png)
 
+![](./recursos/2/13-3.png)
 
+Como buena práctica se va a quitar "Default Context" de la cobertura (scope), y se activará que muestre solo las URL que estén en ella:
 
+![](./recursos/2/14-1.png)
 
+![](./recursos/2/14-2.png)
 
-## 3. EXPLORACIÓN MANUAL
+![](./recursos/2/14-3.png)
 
-Se explorarán las ubicaciones dadas en la documentación, realizando consultas y solicitudes HTTP (GET, POST, PUT, DELETE, etc), desde las credenciales con privilegios más bajos (invitado), verificando si hay forma de hacer acciones que no deberían poder hacerse, e intentando hacer ataques de instrusión para buscar acceder al sistema y escalar los privilegios actuales. En caso de que no se haga, se irán explorando usuarios poco a poco hacia niveles más altos para verificar coherencia con sus permisos y buscando lo mismo para el caso del plan ya descrito para el usuario de privilegio de menor importancia.
+Ahora se exportarán las direcciones que están en el "Default Context" y se importarán en el "Customer":
 
-Para esta exploración de emplea OWASP ZAP v2.16.0.
+![](./recursos/2/15-1.png)
 
-### 3.1. EXPLORACIÓN DE ENLACES DE UN USUARIO SIN PRIVILEGIOS
+![](./recursos/2/15-2.png)
 
-Esto es como si fuera un invitado el que estuviera explorando la API.
+![](./recursos/2/15-3.png)
 
-Se encontró que:
+![](./recursos/2/15-4.png)
 
+![](./recursos/2/15-5.png)
 
-~~~
-POST http://192.168.1.47:8091/register
-~~~
+Ahora se configurará la autenticación. Deberá ser vía scripts, así:
 
-Es capaz de crear un usuario desde invitado (ningún usuario accedido).
+![](./recursos/2/16-1.png)
+
+Dentro de los scripts escogibles aparecerá el script que se ha creado para solicitar la autorización a través de un token bearer:
+
+![](./recursos/2/16-2.png)
+
+Al momento de cargarlo (clic en load), aparecerá un campo nuevo solicitando la URL objetivo (TargetURL) como obligatoria, ya que en el script se ha definido previamente como campo obligatorio desde esta interfaz gráfica:
+
+![](./recursos/2/16-3.png)
+
+También han aparecido (en verde) los campos de los indicadores de acceso y no acceso.
+
+Ahora queda añadir el usuario con el rol de "Customer", que en este caso será "John Doe". Se forzará a usar este usario para todas las peticiones:
+
+![](./recursos/2/17-1.png)
+
+![](./recursos/2/17-2.png)
+
+![](./recursos/2/17-3.png)
+
+La gestión de la sesión se hará con HTTP:
+
+![](./recursos/2/18.png)
+
+Se vuelve a reconfigurar la tecnología para reducir la prueba a una que vaya al grano respecto a las tecnologías que usa esta API:
+
+![](./recursos/2/19.png)
+
+Y por último, hay que asegurarse de que nada esté por ahora excluido del contexto:
+
+![](./recursos/2/20.png)
+
+A partir de ahora el programa está listo para realizar pruebas automatizadas desde este usuario como si estuviera autorizado (desde su sesión).
+
 
 
 
