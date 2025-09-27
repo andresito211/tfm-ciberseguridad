@@ -696,6 +696,44 @@ En las políticas, se usará "API".
 
 ![](./recursos/2/21-5.png)
 
+##### RESULTADOS
+
+Esta vez fue un escaneo de un poco más de 20 minutos:
+
+![](./recursos/2/22-1.png)
+
+Esta vez se ven más peticiones respondidas con 2xx, así como con 5xx:
+
+![](./recursos/2/22-2.png)
+
+Además, el programa automáticamente ha detectado vulnerabilidades más serias (banderas rojas):
+
+![](./recursos/2/22-3.png)
+
+##### ANÁLISIS DE RESULTADOS Y ESTRATEGIAS PARA NUEVAS PRUEBAS
+
+El objetivo por lo pronto es tratar de buscar una escalada en los privilegios, ahora del usuario actual. Por lo pronto se ignorarán las alertas de redirección temporal, pero serán expuestas en el informe final.
+
+En las alertas rojas, hay una asociada a la inyección SQL (SQL injection), y está nada más y nada menos que en la actualización del rol del usuario actual:
+
+![](./recursos/2/23.png)
+
+Se puede ver que la petición no la supo manejar la API, y esto pudo haber pasado por varias razones, pero claramente muestra una posible abertura a algo que se intentó pero que no se sabe si es o no permitido. Se podría imaginar, por ejemplo, que puede resultar ser que el rol "John Doe" no es válido, sabemos que "Customer" sí. Para el caso de un atacante, se intentaría hacer un fuzzing, para revisar si hay algún argumento en cadena de caracteres que sea válido, y tenga un mayor privilegio, por ejemplo que se llame "Administrator" o algo similar. ¿Y si se le pregunta a los desarrolladores qué posibles roles son admisibles? En este caso, se hará así para poder realizar la prueba más rápido, ya que se está simulando un escenario seguro en el que se pueden hacer este tipo de preguntas a ellos.
+
+Para este caso, se revisará a través del código (es como si se le preguntara directamente a ellos), y ver qué roles son posibles.
+
+También valdría la pena realizar las pruebas manuales que se hicieron desde un usuario invitado, estos son para buscar IDOR.
+
+#### 2.4.7.5. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
+
+Del escaneo automatizado del punto 2.4.7.4, se realizarán a cabo las siguientes pruebas:
+
+- Pruebas de IDOR que se hicieron desde el invitado, pero ahora desde el usuario John Doe.
+- Intentar cambiar el role con un rol válido al usuario John Doe.
+
+
+
+
 
 ## 4. SSRF
 
