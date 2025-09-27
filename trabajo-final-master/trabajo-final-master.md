@@ -382,13 +382,13 @@ En el punto 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN
 
 Para poder realizar las peticiones desde el usuario "John Doe" que es de rol "Customer" usando las herramientas como el escaneo activo o el fuzzer, hay que configurar el programa primero, y se hace siguiendo el siguiente procedimiento:
 
-1. Identificar método de autenticación: esto es crucial, ya que de este depende el punto 2.
+1. Identificar método de autenticación: esto es crucial, ya que de este depende la estrategia que se diseñará para el punto 2.
 2. Crear 2 scripts: uno de autenticación (basado en Authentication) y otro de emisor de mensajes (basado en HTTP Sender).
 3. Configurar la sesión actual: la sesión actual tiene un contexto por defecto, que lo único que se le ha hecho es añadirle las direcciones provistas por el descriptor de la API previamente importado en el punto 2.4.2. Se creará un contexto llamado "Customer", que permitirá hacer peticiones desde un usuario "Customer" en este caso llamado "John Doe". Entonces se le añadirán las direcciones de la API, y se configurará la autenticación (Authentication), los usuarios (Users), el usuario forzado (Forced User) y la gestión de la sesión (Session Management).
 
 #### 2.4.5.1. MÉTODO DE AUTENTICACIÓN
 
-Para conocer cómo funciona este método, se revisará en la documentación (/docs o /redoc), cuál es la funcionalidad que permite la autenticación. Si se exploran las API, hay una que se llama "auth" y seguramente debe tener esta funcionalidad, es decir, que pida un usuario y contraseña como argumentos. Para este caso, la que coincide con estas características es la función "token", de tipo "POST":
+Para conocer cómo funciona este método, se revisará en la documentación (/docs o /redoc) cuál es la funcionalidad que permite la autenticación. Si se exploran las API, hay una que se llama "auth" y seguramente debe tener esta funcionalidad, es decir, que pida un usuario y contraseña como argumentos. Para este caso, la que coincide con estas características es la función "token", de tipo "POST":
 
 ![](./recursos/2/9.png)
 
@@ -398,7 +398,7 @@ Esta operación se hace manual, utilizando el solicitador de peticiones de OWASP
 
 ![](./recursos/2/11.png)
 
-Se aprecia que el cuerpo está codificado como application/x-www-form-urlencoded. Se modificará el cuerpo para poner las credenciales de "John Due" y para corregir el "grant_type", que puede ser con una cadena de caracteres con valor "password". Se empleará el cuerpo (Body) en forma de tabla (Table) para que sea más cómoda la edición. Una vez editado, al hacer clic en "Send" se tiene la siguiente respuesta:
+Se aprecia que el cuerpo está codificado como application/x-www-form-urlencoded. Se modificará el cuerpo para poner las credenciales de "John Doe" y para corregir el "grant_type", que puede ser con una cadena de caracteres con valor "password". Se empleará el cuerpo (Body) en forma de tabla (Table) para que sea más cómoda la edición. Una vez editado, al hacer clic en "Send" se tiene la siguiente respuesta:
 
 ![](./recursos/2/12.png)
 
@@ -408,9 +408,202 @@ Es como dice en la documentación. Se recibieron 2 cadenas de caracteres (string
 
 #### 2.4.5.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
 
-y esto se hace a través de dos scripts:
+Esto se hace a través de dos scripts:
 
 1. Está basado en Authentication, y se va a llamar "REST-API-Bearer_auth.js". Este se va a ejecutar cada vez que se haga una solicitud a la API.
+2. Está basado en HTTP Sender que se va a llamar "Http-sender".
+
+
+#### CREACIÓN DE "REST-API-Bearer_auth.js"
+
+Para este, se va a usar de referencia el script "OfflineTokenRefresh.js", que está en el repo "https://github.com/zaproxy/community-scripts", exactamente en la siguiente URL: https://github.com/zaproxy/community-scripts/blob/main/authentication/OfflineTokenRefresh.js
+
+En este repositorio se encuentran scripts muy útiles para este tipo de situaciones, cuyas plantillas ya están predefinidas en el programa.
+
+
+Se realizaron algunas modificaciones, como en los logs en consola y la edición de los campos, ya que no son los mismos para esta API. Parte del encabezado, así como las funciones "getLoggedInIndicator" y "getLoggedOutIndicator" fueron realizadas por la IA DeepSeek. Con estas dos funciones se le hace saber al programa cuándo el usuario está o no autorizado por acceso (logged in). El script quedó así:
+
+~~~
+// The authenticate function will be called for authentications made via ZAP.
+
+// The authenticate function is called whenever ZAP requires to authenticate, for a Context for which this script
+// was selected as the Authentication Method. The function should send any messages that are required to do the authentication
+// and should return a message with an authenticated response so the calling method.
+//
+// NOTE: Any message sent in the function should be obtained using the 'helper.prepareMessage()' method.
+//
+// Parameters:
+//		helper - a helper class providing useful methods: prepareMessage(), sendAndReceive(msg), getHttpSender()
+//		paramsValues - the values of the parameters configured in the Session Properties -> Authentication panel.
+//					The paramsValues is a map, having as keys the parameters names (as returned by the getRequiredParamsNames()
+//					and getOptionalParamsNames() functions below)
+//		credentials - an object containing the credentials values, as configured in the Session Properties -> Users panel.
+//					The credential values can be obtained via calls to the getParam(paramName) method. The param names are the ones
+//					returned by the getCredentialsParamsNames() below
+
+/*
+ * This script is intended to be used along with  httpsender/AddBearerTokenHeader.js  to
+ * handle an OAUTH2 offline token refresh workflow.
+ *
+ * authentication/OfflineTokenRefresher.js will automatically fetch the new access token for every unauthorized
+ * request determined by the "Logged Out" or "Logged In" indicator previously set in Context -> Authentication.
+ *
+ *  httpsender/AddBearerTokenHeader.js  will add the new access token to all requests in scope
+ * made by ZAP (except the authentication ones) as an "Authorization: Bearer [access_token]" HTTP Header.
+ *
+ * @author Laura Pardo <lpardo at redhat.com>
+ */
+
+/*
+ * Modificado por Andrés E. Torres H., para probar la API Damn Vulnerable RESTaurant,
+ * para el trabajo de grado de la maestría en ciberseguridad con IMF SE, Deloitte y la U. Católica de Ávila.*/
+
+// Acceso directo a funciones importadas:
+var HttpRequestHeader = Java.type(
+  "org.parosproxy.paros.network.HttpRequestHeader"
+);
+var HttpHeader = Java.type("org.parosproxy.paros.network.HttpHeader");
+var URI = Java.type("org.apache.commons.httpclient.URI");
+var ScriptVars = Java.type("org.zaproxy.zap.extension.script.ScriptVars");
+
+
+function authenticate(helper, paramsValues, credentials) {
+	print("[API Auth] Starting authentication...");
+
+  // 1. BUILD THE LOGIN REQUEST
+  // Obtener URL desde la interfaz gráfica de las propiedades de la sesión en el programa:
+  var loginUrl = paramsValues.get('TargetURL');
+  // Construir el cuerpo de la solicitud:
+  var requestBody = "grant_type=password";
+  requestBody += "&username=" + credentials.getParam('username').replaceAll(' ', '+');
+  requestBody += "&password=" + credentials.getParam('password');
+  requestBody += "&scope=" + "%22John+Doe%22";
+  requestBody += "&client_id=" + "%22John+Doe%22";
+  requestBody += "&client_secret=" + "%22John+Doe%22";
+
+  // Mostrar en la consola la URL de acceso del usuario y el contenido a enviar:
+  print('Login URL: ' + loginUrl);
+  print('Credentials:' + requestBody);
+
+  // Construir mensaje HTTP:
+  var msg = helper.prepareMessage();
+  msg.setRequestBody(requestBody);
+  var RequestHeader = new HttpRequestHeader(
+    'POST',
+    new URI(loginUrl),
+    HttpHeader.HTTP11
+  );
+  // Configurar encabezado para la solicitud de acceso:
+  msg.setRequestHeader(RequestHeader);
+  msg.getRequestHeader().setHeader('content-type', 'application/x-www-form-urlencoded');
+  msg.getRequestHeader().setHeader('accept', 'application/json');
+  msg.getRequestHeader().setContentLength(msg.getRequestBody().length());
+  // Enviar mensaje y recibir su respuesta:
+  print('Enviado: ' + msg.getRequestHeader() + msg.getRequestBody());
+  helper.sendAndReceive(msg);
+  print('\n\nRecibido: ' + msg.getResponseHeader());
+  print("Auth Response Status: " + msg.getResponseHeader().getStatusCode());
+
+  // 2. EXTRACT THE TOKEN FROM THE JSON RESPONSE
+  var responseBody = msg.getResponseBody().toString();
+  // Mostrar contenido de la respuesta:
+  print("Auth Response Body: " + responseBody);
+
+  try {
+    var json = JSON.parse(responseBody);
+    // Validar recepción del token:
+    var authToken = json.access_token || json.token || json.jwt;
+    if (!authToken) {
+      throw new Error("Token not found in the expected JSON field.");
+    }
+    print("Successfully extracted Bearer Token.");
+    // Guardar token en una variable global. Esto es para que el script "Http-sender" lo use en sus peticiones de acceso:
+    ScriptVars.setGlobalVar("access_token", authToken);
+    // 3. RETURN THE VALUE FOR THE AUTHORIZATION HEADER
+    return msg;
+  } catch (err) {
+    print("ERROR: Failed to parse JSON or find token: " + err.message);
+    return null;
+  }
+}
+
+// This function is called during the script loading to obtain a list of the names of the required configuration parameters,
+// that will be shown in the Session Properties -> Authentication panel for configuration. They can be used
+// to input dynamic data into the script, from the user interface (e.g. a login URL, name of POST parameters etc.)
+function getRequiredParamsNames(){
+	return ["TargetURL"];
+}
+
+// This function is called during the script loading to obtain a list of the names of the optional configuration parameters,
+// that will be shown in the Session Properties -> Authentication panel for configuration. They can be used
+// to input dynamic data into the script, from the user interface (e.g. a login URL, name of POST parameters etc.)
+function getOptionalParamsNames(){
+	return [];
+}
+
+// This function is called during the script loading to obtain a list of the names of the parameters that are required,
+// as credentials, for each User configured corresponding to an Authentication using this script 
+function getCredentialsParamsNames(){
+  // Solo se requiere el usuario y la constraseña para el acceso:
+	return ["username", "password"];
+}
+
+// This optional function is called during the script loading to obtain the logged in indicator.
+// NOTE: although optional this function must be implemented along with the function getLoggedOutIndicator().
+function getLoggedInIndicator() {
+  // A successful API call often returns 200/201/204.
+  // This regex is a broad indicator of "not an auth error".
+  return "\"status\":? ?200|HTTP/1.1 20[0-4]";
+}
+
+// Tell ZAP how to know if a request was made without being authenticated.
+function getLoggedOutIndicator() {
+  // This is critical. Use the exact error your API returns on auth failure.
+  return "HTTP/1.1 401|HTTP/1.1 403|\"error\":? ?\"Unauthorized\"";
+}
+~~~
+
+
+#### CREACIÓN DE "Http-sender.js"
+
+Para este se usó de referencia AddBearerTokenHeader.js, del repo "https://github.com/zaproxy/community-scripts", ya que como lo sugiere el script original "authentication/OfflineTokenRefresher.js" ahora llamado "REST-API-Bearer_auth.js", se usa en conjunto con este. Algunas cosas se modificaron para acomodarlas a este trabajo, y quedó finalmente así:
+
+~~~
+/*
+ * This script is intended to be used along with authentication/OfflineTokenRefresher.js to
+ * handle an OAUTH2 offline token refresh workflow.
+ *
+ * authentication/OfflineTokenRefresher.js will automatically fetch the new access token for every unauthorized
+ * request determined by the "Logged Out" or "Logged In" indicator previously set in Context -> Authentication.
+ *
+ *  httpsender/AddBearerTokenHeader.js will add the new access token to all requests in scope
+ * made by ZAP (except the authentication ones) as an "Authorization: Bearer [access_token]" HTTP Header.
+ *
+ * @author Laura Pardo <lpardo at redhat.com>
+ */
+
+ /*
+ * Modificado por Andrés E. Torres H., para probar la API Damn Vulnerable RESTaurant,
+ * para el trabajo de grado de la maestría en ciberseguridad con IMF SE, Deloitte y la U. Católica de Ávila.*/
+
+var HttpSender = Java.type("org.parosproxy.paros.network.HttpSender");
+var ScriptVars = Java.type("org.zaproxy.zap.extension.script.ScriptVars");
+
+function sendingRequest(msg, initiator, helper) {
+  // add Authorization header to all request in scope except the authorization request itself
+  print('Insertando token en solicitud actual...');
+  if (initiator !== HttpSender.AUTHENTICATION_INITIATOR && msg.isInScope()) {
+    msg
+      .getRequestHeader()
+      .setHeader(
+        "Authorization",
+        "Bearer " + ScriptVars.getGlobalVar("access_token")
+      );
+  }
+}
+
+function responseReceived(msg, initiator, helper) {}
+~~~
 
 
 #### 2.4.5.3. CONFIGURAR LA SESIÓN ACTUAL
