@@ -386,7 +386,7 @@ Para poder realizar las peticiones desde el usuario "John Doe" que es de rol "Cu
 2. Crear 2 scripts: uno de autenticación (basado en Authentication) y otro de emisor de mensajes (basado en HTTP Sender).
 3. Configurar la sesión actual: la sesión actual tiene un contexto por defecto, que lo único que se le ha hecho es añadirle las direcciones provistas por el descriptor de la API previamente importado en el punto 2.4.2. Se creará un contexto llamado "Customer", que permitirá hacer peticiones desde un usuario "Customer" en este caso llamado "John Doe". Entonces se le añadirán las direcciones de la API, y se configurará la autenticación (Authentication), los usuarios (Users), el usuario forzado (Forced User) y la gestión de la sesión (Session Management).
 
-#### 2.4.5.1. MÉTODO DE AUTENTICACIÓN
+#### 2.4.7.1. MÉTODO DE AUTENTICACIÓN
 
 Para conocer cómo funciona este método, se revisará en la documentación (/docs o /redoc) cuál es la funcionalidad que permite la autenticación. Si se exploran las API, hay una que se llama "auth" y seguramente debe tener esta funcionalidad, es decir, que pida un usuario y contraseña como argumentos. Para este caso, la que coincide con estas características es la función "token", de tipo "POST":
 
@@ -406,7 +406,7 @@ Es como dice en la documentación. Se recibieron 2 cadenas de caracteres (string
 
 
 
-#### 2.4.5.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
+#### 2.4.7.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
 
 Esto se hace a través de dos scripts:
 
@@ -414,7 +414,7 @@ Esto se hace a través de dos scripts:
 2. Está basado en HTTP Sender que se va a llamar "Http-sender".
 
 
-#### CREACIÓN DE "REST-API-Bearer_auth.js"
+##### CREACIÓN DE "REST-API-Bearer_auth.js"
 
 Para este, se va a usar de referencia el script "OfflineTokenRefresh.js", que está en el repo "https://github.com/zaproxy/community-scripts", exactamente en la siguiente URL: https://github.com/zaproxy/community-scripts/blob/main/authentication/OfflineTokenRefresh.js
 
@@ -564,7 +564,7 @@ function getLoggedOutIndicator() {
 ~~~
 
 
-#### CREACIÓN DE "Http-sender.js"
+##### CREACIÓN DE "Http-sender.js"
 
 Para este se usó de referencia AddBearerTokenHeader.js, del repo "https://github.com/zaproxy/community-scripts", ya que como lo sugiere el script original "authentication/OfflineTokenRefresher.js" ahora llamado "REST-API-Bearer_auth.js", se usa en conjunto con este. Algunas cosas se modificaron para acomodarlas a este trabajo, y quedó finalmente así:
 
@@ -606,7 +606,7 @@ function responseReceived(msg, initiator, helper) {}
 ~~~
 
 
-#### 2.4.5.3. CONFIGURAR LA SESIÓN ACTUAL
+#### 2.4.7.3. CONFIGURAR LA SESIÓN ACTUAL
 
 
 Finalmente se hará un nuevo contexto llamado "Customer", desde el que se harán peticiones con el usuario "John Doe", que actualmente es "Customer". Para esto, primero se creará el nuevo contexto:
@@ -674,7 +674,27 @@ Y por último, hay que asegurarse de que nada esté por ahora excluido del conte
 A partir de ahora el programa está listo para realizar pruebas automatizadas desde este usuario como si estuviera autorizado (desde su sesión).
 
 
+#### 2.4.7.4. ESCANEO AUTOMATIZADO
 
+Antes de hacer el escaneo automatizado, hay que habilitar el script que permite enviar las peticiones HTTP envenenadas con el token bearer generado por el script de autenticación:
+
+![](./recursos/2/21-1.png)
+
+Ahora se inicia el escaneo automático, pero antes hay que configurar algunos parámetros:
+
+![](./recursos/2/21-2.png)
+
+En la cobertura (Scope) se hará en el contexto "Customer", con el usuario "John Doe", que sea recursivo (Recurse) y que permita visualizar los ajustes avanzados:
+
+![](./recursos/2/21-3.png)
+
+En los vectores de entrada, se añadirán los de URL Path y HTTP Headers, a todas las peticiones. Hará un poco más lenta la prueba, pero ya se ha cerrado bastante desde la configuración "Technology" de este contexto, en las propiedades de la sesión:
+
+![](./recursos/2/21-4.png)
+
+En las políticas, se usará "API".
+
+![](./recursos/2/21-5.png)
 
 
 ## 4. SSRF
