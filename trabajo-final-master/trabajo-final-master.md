@@ -728,6 +728,12 @@ Esta vez fue un escaneo de un poco más de 20 minutos:
 
 ![](./recursos/2/22-1.png)
 
+Antes de continuar con el análisis, se va a guardar el progreso (ver 2.4.5.3 para ver el procedimiento), y adicionalmente el historial del escaneo. Se pudo haber hecho en el escaneo anterior también, pero dado los resultados, no fue relevante hacerlo, pero esta vez es recomendable, pues esta información se puede usar para realizar análisis más especializados, por ejemplo correlación de datos:
+
+![](./recursos/2/22-1-1.png)
+
+![](./recursos/2/22-1-2.png)
+
 Esta vez se ven más peticiones respondidas con 2xx, así como con 5xx:
 
 ![](./recursos/2/22-2.png)
@@ -738,7 +744,10 @@ Además, el programa automáticamente ha detectado vulnerabilidades más serias 
 
 ##### ANÁLISIS DE RESULTADOS Y ESTRATEGIAS PARA NUEVAS PRUEBAS
 
+###### ALERTAS ROJAS AUTOMÁTICAS
 El objetivo por lo pronto es tratar de buscar una escalada en los privilegios, ahora del usuario actual. Por lo pronto se ignorarán las alertas de redirección temporal, pero serán expuestas en el informe final.
+
+- ALERTA ROJA EN ROL ACTUAL DEL USUARIO
 
 En las alertas rojas, hay una asociada a la inyección SQL (SQL injection), y está nada más y nada menos que en la actualización del rol del usuario actual:
 
@@ -747,6 +756,29 @@ En las alertas rojas, hay una asociada a la inyección SQL (SQL injection), y es
 Se puede ver que la petición no la supo manejar la API, y esto pudo haber pasado por varias razones, pero claramente muestra una posible abertura a algo que se intentó pero que no se sabe si es o no permitido. Se podría imaginar, por ejemplo, que puede resultar ser que el rol "John Doe" no es válido, sabemos que "Customer" sí. Para el caso de un atacante, se intentaría hacer un fuzzing, para revisar si hay algún argumento en cadena de caracteres que sea válido, y tenga un mayor privilegio, por ejemplo que se llame "Administrator" o algo similar. ¿Y si se le pregunta a los desarrolladores qué posibles roles son admisibles? En este caso, se hará así para poder realizar la prueba más rápido, ya que se está simulando un escenario seguro en el que se pueden hacer este tipo de preguntas a ellos.
 
 Para este caso, se revisará a través del código (es como si se le preguntara directamente a ellos), y ver qué roles son posibles.
+
+###### ALERTAS ROJAS MANUALES
+
+Para estas se va a realizar el procedimiento realizado para el usuario invitado, de organizar el historial por el código de respuesta, empezando por analizar los 2xx.
+
+Estas son de especial cuidado, ya que podrían ser falsos positivos (parece que fueron, pero no son) o falsos negativos (parecen mostrar que todo va bien, pero el daño sí se hizo y está oculto todavía). La ventaja que tiene OWASP ZAP es que permite emitir una alerta y etiquetarle el grado de seguridad con la que se juzga un presunto evento. Esto ayudará además a diseñar una prueba manual, que permitiría elevar dicho grado de seguridad en el juicio de la alerta, en caso de que se compruebe.
+
+- DETECCIÓN DE ACEPTACIÓN DE CAMBIOS EN CAMPOS CON CARACTERES QUE NO DEBERÍAN SER VÁLIDOS
+
+Por ejemplo, campos como el nombre de una persona no debería aceptar caracteres extraños como "@", "\", etc:
+
+![](./recursos/2/24.png)
+
+También se descubrió en el número de teléfono (phone number).
+
+- DETECCIÓN DE CAMBIO EN EL CONTENIDO DEL MENÚ
+
+Algo llamó la atención y fue que se borró el id # 1 del contenido del menú. Probablemente pudo haber sido un DELETE del menú. Si el usuario de rol "Customer" no debería estar autorizado para hacer esto, deberá lanzarse una alerta roja. Por lo pronto se hará con seguridad de juicio media (confidence):
+
+
+![](./recursos/2/25.png)
+
+Para asegurarse de esto, se hará una prueba manual intentando quitar el id # 2 en el punto 2.4.7.5.  ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES.
 
 También valdría la pena realizar las pruebas manuales que se hicieron desde un usuario invitado, estos son para buscar IDOR.
 
