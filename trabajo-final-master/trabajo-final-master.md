@@ -865,6 +865,10 @@ GET /orders permite visualizar todas las órdenes del restaurante, algo que no d
 
 GET /orders/{order_id} es un caso de IDOR. Lo que se debería hacer es poderse acceder a este, siempre y cuando tenga alguna relación con el usuario actual, además de que el recurso debería estar enmascarado.
 
+##### PRUEBAS PARA EL CAMBIO DE ROL DEL USUARIO
+
+Estas podrían explotar la vulnerabilidad de una escalada de privilegios. Lo que se intentará es tratar de cambiar el rol a uno con privilegios más altos. Como se desconocen sus posibles valores (no están documentados), se hará como si se le preguntara a los desarrolladores.
+
 ## 4. SSRF
 
 1. Ir a docs. Para mi caso, el servidor está lanzado en la siguiente dirección:
