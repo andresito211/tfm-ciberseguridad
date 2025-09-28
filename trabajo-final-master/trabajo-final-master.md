@@ -322,7 +322,17 @@ La cobertura (scope) del escaneo quedará entonces en el contexto por defecto, y
 
 #### 2.4.5.2. PRIMER ESCANEO ACTIVO
 
-Una vez hecho esto, ya el programa estará preparado para el escaneo como se desea. A continuación, se muestran dos resúmenes gráficos del escaneo activo:
+Una vez hecho esto, ya el programa estará preparado para el escaneo como se desea. 
+
+**NOTA: Antes de darle "Start Scan" hay que tener una consideración y es el monitor del progreso. Apenas se haga clic, inmediatamente deberá ir al monitor (al parar el cursor encima del siguiente ícono, paraece "Show sacn progress details") y a la pestaña "Response Chart". Si no hace esto, no podrá ver la gráfica completa de lo monitorizado. En breve se explicará esto. Esto parece ser un error del programa, y se podría esperar que la tengan en cuenta para una actualización pronta.**
+
+![](./recursos/2/8-9-0-1.png)
+
+![](./recursos/2/8-9-0-2.png)
+
+
+
+A continuación, se muestran dos resúmenes gráficos del escaneo activo:
 
 ![](./recursos/2/8-9-1.png)
 
@@ -343,7 +353,21 @@ Para el caso de las 5xx, es para ver si existe la posibilidad de que haya una vu
 
 Solo hubo una petición, y no se le ha inyectado ninguna carga paga que implique una inyección de comandos, ni de SQL. Solo parece que no pudo manejar el valor "\u0000" en username, que sería una nota a tener en cuenta para que se mejore la presentación de la API. Se emitirá una alerta de información para que cuando se genere el reporte, aparezca.
 
-#### 2.4.5.3. CREACIÓN DE ALERTA MANUAL
+#### 2.4.5.3. GUARDADO DEL RESULTADO DEL ESCANEO ACTIVO
+
+Es importante guardar los resultados del escaneo activo, ya que, incluso con persistencia de sesión, no quedarían guardados. Esto podría servir para el análisis futuro de datos que no se alcanzaron a analizar, o por si se pueden analizar con otro programa especializado o que el auditor tenga desarrollado para dicho propósito.
+
+Para guardar el registro de la gráfica de respuestas "Response Chart":
+
+![](./recursos/2/8-11-1.png)
+
+![](./recursos/2/8-11-2.png)
+
+Para guardar el registro del progreso (Scan Progress). Esto se guardará en un archivo separado por tabulaciones:
+
+![](./recursos/2/8-11-3.png)
+
+#### 2.4.5.4. CREACIÓN DE ALERTA MANUAL
 
 
 En el punto anterior se evidenció un error interno en el servidor porque no fue capaz de manejar correctamente un campo en la api que permite reiniciar la contraseña. Para la generación de una alerta, se siguen los siguientes pasos:
@@ -692,7 +716,9 @@ En los vectores de entrada, se añadirán los de URL Path y HTTP Headers, a toda
 
 ![](./recursos/2/21-4.png)
 
-En las políticas, se usará "API".
+En las políticas, se usará "API". Enseguida se inicia el escaneo.
+
+**NOTA: no olvidar abrir el monitor del progreso.**
 
 ![](./recursos/2/21-5.png)
 
