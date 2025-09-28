@@ -786,12 +786,84 @@ También valdría la pena realizar las pruebas manuales que se hicieron desde un
 
 Del escaneo automatizado del punto 2.4.7.4, se realizarán a cabo las siguientes pruebas:
 
-- Pruebas de IDOR que se hicieron desde el invitado, pero ahora desde el usuario John Doe.
+- Pruebas de IDOR que se hicieron desde el invitado, pero ahora desde el usuario John Doe (como se hicieron en el punto 2.4.4 EXPLORACIÓN MANUAL DE LAS DIRECCIONES QUE CONTIENEN PARÁMETROS EN LA RUTA DE LA URL EN BÚSQUEDA DE IDOR).
 - Intentar cambiar el role con un rol válido al usuario John Doe.
 
+##### PRUEBAS DE IDOR
+
+Se harán para los siguientes valores:
+~~~
+DELETE /menu/2
+PUT /menu/1
+GET /orders/1
+~~~
+
+Han pasado un poco más de 3 horas desde que se hizo el escaneo activo, y cuando se intentó realizar el escaneo manual apareció la petición para "DELETE /menu/2" como no autorizada. Esto significa que el token bearer tiene un vencimiento menor a este tiempo.
+
+![](./recursos/2/26.png)
+
+Dado que manualmente solo envía el último token realizado automáticamente, se desactivará el script del Http-sender, se solicitará el token, y manualmente se introducirá en las siguientes peticiones.
+
+Probando con "DELETE /menu/1", se tiene como elemento no encontrado:
+
+![](./recursos/2/27.png)
 
 
+Probando con "DELETE /menu/2" se tiene este resultado:
 
+![](./recursos/2/28.png)
+
+Volviendo a hacer la misma petición, se tiene este resultado:
+
+![](./recursos/2/29.png)
+
+Se marcará como una alerta de alto riesgo como confirmada. Esto es un caso de IDOR, además de que no debería estar autorizado.
+
+Probando con "PUT /menu/1":
+
+![](./recursos/2/30.png)
+
+¿Que pasaría si de trata de modificar el elemento 3 del menú?:
+
+![](./recursos/2/30-1.png)
+
+La acción está prohibida para el usuario actual.
+
+Probando con "GET /orders/1":
+
+![](./recursos/2/31.png)
+
+Esto parece ser otro caso de IDOR. Se emitirá la alerta como de medio riesgo por fuga de información, y por lo pronto como seguridad de juicio media. Para esto se hará una prueba haciendo un POST a la creación de una orden. Para ser un usuario "Customer" debería poder realizarse (en la vida real a través de la validación de un pago, de lo contrario, debería ser la responsabilidad de alguien interno).
+
+Se encontró que no hay suficiente información en /docs ni en /redoc de cómo debería llenarse el campo "items":
+
+![](./recursos/2/32.png)
+
+Se marcará como una alerta informacional para que la documentación quede clara para este campo.
+
+![](./recursos/2/33.png)
+
+Para esto, se revisó el código (el equivalente a preguntarle a los desarrolladores), y se hizo la petición siguiente, con el siguiente resultado:
+
+![](./recursos/2/34.png)
+
+Respecto de la última vez que se solicitó el último token, ha pasado media hora, y probablemente ese es el tiempo que dura cada uno. Al solicitar uno nuevo y de nuevo hacer el POST en orders, se tiene lo siguiente:
+
+![](./recursos/2/35.png)
+
+Ahora se probarán los GET de orders/ y /orders/1.
+
+
+![](./recursos/2/36.png)
+
+![](./recursos/2/37.png)
+
+
+El usuario "Customer" puede tener acceso a todas las órdenes del restaurante, así como una por una. Para ambos casos se les generó una alerta independiente y esto es porque:
+
+GET /orders permite visualizar todas las órdenes del restaurante, algo que no debería permitírsele al usuario "Customer". Esto es información interna de la operación de este.
+
+GET /orders/{order_id} es un caso de IDOR. Lo que se debería hacer es poderse acceder a este, siempre y cuando tenga alguna relación con el usuario actual, además de que el recurso debería estar enmascarado.
 
 ## 4. SSRF
 
