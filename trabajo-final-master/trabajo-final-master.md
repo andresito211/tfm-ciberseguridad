@@ -869,7 +869,81 @@ GET /orders/{order_id} es un caso de IDOR. Lo que se debería hacer es poderse a
 
 Estas podrían explotar la vulnerabilidad de una escalada de privilegios. Lo que se intentará es tratar de cambiar el rol a uno con privilegios más altos. Como se desconocen sus posibles valores (no están documentados), se hará como si se le preguntara a los desarrolladores.
 
-## 4. SSRF
+En la API, en db/models.py se encuentran los posibles valores:
+
+![](./recursos/2/38.png)
+
+Un atacante habría podido usar fuzzing con valores predeterminados, y sin con suerte tiene algunos que tengan mayores privilegios, seguramente podría hacer algo. Pero para acelerar el proceso, se evaluará la posibilidad de cambiar el rol siendo "Customer" a uno más elevado. Pero esta sería una buena oportunidad de probar el fuzzer de OWASP ZAP. Se pondrán como valores predeterminados a "Chef" y "Employee" a ver que sucederá:
+
+![](./recursos/2/39.png)
+
+Hay que añadir un nuevo token, porque ya seguro debe estar vencido:
+
+![](./recursos/2/40.png)
+
+![](./recursos/2/41.png)
+
+Aquí se va a configurar el veneno de la carga paga, en la parte que interesa que es la del rol (role):
+
+![](./recursos/2/42.png)
+
+Se añaden los valores venenosos:
+
+![](./recursos/2/43.png)
+
+![](./recursos/2/44.png)
+
+![](./recursos/2/45.png)
+
+Una vez configurado el veneno, se ejecuta el fuzzer:
+![](./recursos/2/46.png)
+
+Y como se puede observar, se ha podido realizar una escalada en los privilegios, desde "Customer" a "Employee", desde el usuario "Customer". Se notificará la alerta.
+
+![](./recursos/2/47.png)
+
+Cualquier cosa que se haga automatizada ahora, o que se haga desde este usuario tendrá la autorización de un empleado (Employee). Por eso, en la próxima sección 2.4.8. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "EMPLOYEE" se ejecutarán las mismas pruebas realizadas en esta sección de rol "Customer".
+
+### 2.4.8. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "EMPLOYEE"
+
+En la última parte de la sección anterior se pudo realizar una escalada en los privilegios y ahora se está en un usuario con rol de empleado (Employee), que por intuición, debería tener privilegios mucho más altos, que permita realizar ciertas operaciones adicionales que no se podían hacer en los roles anteriores.
+
+Las pruebas que se harán tendrán el mismo orden de las de "Customer":
+
+- 1. Escaneo automatizado. Se hará sobre el mismo contexto "Customer".
+- 2. Escaneo manual de recursos sospechosos de ser vulnerables.
+
+#### 2.4.8.1. ESCANEO AUTOMATIZADO
+
+Este escaneo tardó casi media hora:
+
+![](./recursos/2/48.png)
+
+Se puede visualizar que hubo muchas respuestas 2xx así como 5xx:
+
+![](./recursos/2/49.png)
+
+##### RESULTADOS
+
+No se encontraron resultados significativos, pero hay algunos para considerar, como el hecho de que los empleados no puedan cambiar sus contraseñas. Ya se ha generado la alerta, como riesgo medio y confirmada.
+
+
+#### 2.4.8.2. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
+
+
+Se intentará cambiar el rol del usuario a "Chef":
+
+![](./recursos/2/50.png)
+
+Aunque manualmente se hizo el cambio del token y se intentó pasar a "Chef", este rol de usuario no es capaz de permitir ese cambio, lo cual está bien.
+
+A partir de este punto se van a hacer unas pruebas en las que hay vulnerabilidades en la API que requieren técnicas más sofisticadas de explotación, y que están explicadas en la sección de tests/vulns del juego (API):
+
+![](./recursos/2/51.png)
+
+Con las técnicas utilizadas hasta ahora se han podido descubrir 4 de ellas (level_0 hasta level_3). Para el caso de level_4, es una *falsificación de petición del lado del servidor* (Server Side Request Forgery o SSRF). Se espera que con este ataque se pueda escalar al rol de "Chef". Pero antes se va a revisar en el código el porqué podría presentarse esta vulnerabilidad. Y para el nivel 5, se intentará ejecutar algún comando en el SO en el que está ejecutándose la API.
+
+##### PRUEBA DE FALSIFICACIÓN DE PETICIÓN DEL LADO DEL SERVIDOR (SSRF)
 
 1. Ir a docs. Para mi caso, el servidor está lanzado en la siguiente dirección:
 
@@ -920,5 +994,8 @@ curl -X 'PUT' \
   "description": "string"
 }'
 ~~~
+
+##### PRUEBA DE EJECUCIÓN DE COMANDOS EN EL SO DESDE LA API
+
 
 
