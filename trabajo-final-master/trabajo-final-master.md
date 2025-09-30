@@ -941,9 +941,78 @@ A partir de este punto se van a hacer unas pruebas en las que hay vulnerabilidad
 
 ![](./recursos/2/51.png)
 
-Con las técnicas utilizadas hasta ahora se han podido descubrir 4 de ellas (level_0 hasta level_3). Para el caso de level_4, es una *falsificación de petición del lado del servidor* (Server Side Request Forgery o SSRF). Se espera que con este ataque se pueda escalar al rol de "Chef". Pero antes se va a revisar en el código el porqué podría presentarse esta vulnerabilidad. Y para el nivel 5, se intentará ejecutar algún comando en el SO en el que está ejecutándose la API.
+Con las técnicas utilizadas hasta ahora se han podido descubrir 4 de ellas (level_0 hasta level_3). Para el caso de level_4, es una *falsificación de petición del lado del servidor* (Server Side Request Forgery o SSRF). Se espera que con este ataque se pueda escalar al rol de "Chef". Pero antes se va a revisar en la documentación de la API el porqué podría presentarse esta vulnerabilidad. Y para el nivel 5, se intentará ejecutar algún comando en el SO en el que está ejecutándose la API.
 
 ##### PRUEBA DE FALSIFICACIÓN DE PETICIÓN DEL LADO DEL SERVIDOR (SSRF)
+
+Para que pueda haber una SSRF, la API debe cumplir con un requisito de sospecha y este es que haya al menos una función de la API que el usuario puede realizar que implique que el servidor deba hacer una petición a otra dirección, de manera que la respuesta de esa petición quede incrustada en la respuesta original realizada por el usuario. Gráficamente, se vería así:
+
+![](./recursos/2/52.png)
+
+Aunque el mismo POST habría podido responder también directamente con la respuesta incrustada si la API realizara esta tarea internamente.
+
+Analizando la documentación, hay una función que hace sospechar la posibilidad de que esta sea vulnerable a SSRF:
+
+~~~
+PUT menu/
+request body: {
+  "name": "string",
+  "price": 0,
+  "category": "string",
+  "image_url": "string",
+  "description": "string"
+}
+response body cuando es 201:
+{
+  "id": int,
+  "name": "string",
+  "price": float,
+  "category": "string",
+  "description": "string",
+  "image_base64": "string"
+}
+~~~
+
+Si se hace una hipotética prueba de escritorio de cómo funciona esta petición, la respuesta sería así:
+
+- id: la API o la BB.DD. la asignaría automáticamente.
+- name: la sacaría de "name" de la petición directamente.
+- price: la sacaría de "price" de la petición directamente.
+- category: la sacaría de "category" de la petición directamente.
+- description: la sacaría de "description" de la petición directamente.
+- image_base64: o convierte la "url" de la petición en base64, o **hace una solicitud http a la URL, coge la respuesta y la transforma en base64**.
+
+La última parte está resaltada en negrilla porque es la que la haría vulnerable a una SSRF.
+
+Las pruebas se harán manualmente desde el usuario con rol "Employee" a ver qué respuestas se tienen. Por último se sospecha de esta función de la API:
+
+~~~
+GET /admin/reset-chef-password"
+~~~
+
+Aunque está oculta en la documentación, y se intentó hacer un arañazo (spidering), no pudo conseguirse por ninguno de estos medios.
+
+![](./recursos/2/53.png)
+
+
+Pero esto es algo que se habría podido conseguir en el momento de una auditoría, en el caso hipotético de que por políticas de ciberseguridad se tengan que cambiar las contraseñas cada cierto tiempo (incluida la del chef), preguntar si la API es capaz de permitir eso, y cómo se haría.
+
+Con las indagaciones hechas hasta ahora, se puede plantear con seguridad un vector de ataque para realizar una SSRF.
+
+El plan será así:
+
+1. Manualmente enviar la siguiente solicitud y esperar a ver que responde:
+
+PUT menu/
+request body: {
+  "name": "string",
+  "price": 0,
+  "category": "string",
+  "image_url": "string",
+  "description": "string"
+}
+
+
 
 1. Ir a docs. Para mi caso, el servidor está lanzado en la siguiente dirección:
 
