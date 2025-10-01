@@ -91,7 +91,7 @@ Las direcciones que se van a explorar son las siguientes:
 - "/docs": el manual de Damn Vulnerable RESTaurant sugiere que aquí hay documentación de la API en Swagger.
 - "/redoc": el manual de Damn Vulnerable RESTaurant sugiere que aquí hay documentación de la API en ReDoc.
 
-### 2.2.1. EXPLORACIÓN MANUAL CON MOZILLA FIREFOX
+#### 2.2.1. EXPLORACIÓN MANUAL CON MOZILLA FIREFOX
 
 "/":
 
@@ -109,7 +109,7 @@ Las direcciones que se van a explorar son las siguientes:
 
 !["/redoc"](./recursos/1-8.png)
 
-### 2.2.2. EXPLORACIÓN MANUAL CON GOOGLE CHROME
+#### 2.2.2. EXPLORACIÓN MANUAL CON GOOGLE CHROME
 
 "/":
 
@@ -128,30 +128,30 @@ Las direcciones que se van a explorar son las siguientes:
 !["/redoc"](./recursos/1-5.png)
 
 
-### 2.2.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
+#### 2.2.3. CONCLUSIÓN DE EXPLORACIÓN MANUAL
 
 1. Se pudo obtener la documentación del uso de la API a través de los enlaces /docs y /redoc. Además se puede obtener la especificación OpenAPI, que será muy útil para la sección 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO INICIAL: ESPECIFICACIÓN DE LA API de este trabajo.
 
 2. Llama la atención aquí es que Firefox incluye dos barras de opciones adicionales para poder interactuar mejor con la API (ver "/" y "/admin").
 
 
-## 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO INICIAL: ESPECIFICACIÓN DE LA API
+### 2.3. EXPLORACIÓN CON HERRAMIENTA DE ESCANEO AUTOMATIZADO INICIAL: ESPECIFICACIÓN DE LA API
 
 Para un caso de la vida real la idea es que el equipo de trabajo que desarrolla la API entregue una documentación de esta especificación, ya sea como un archivo, o si es una empresa que sigue los estándares de una API RESTful se pueda conseguir mediante un enlace, por ejemplo "/docs" o "/redoc". Para esta caso en particular, los desarrolladores sí han suministrado este recurso y se puede descargar efectivamente mediante los enlaces "/docs" o "/redoc" (ver README.md de la API), aunque también fueron descubiertos en el punto 2.2 EXPLORACIÓN MANUAL.
 
-## 2.4. ESCANEOS AUTOMATIZADOS Y MANUALES CON OWASP ZAP
+### 2.4. ESCANEOS AUTOMATIZADOS Y MANUALES CON OWASP ZAP
 
 OWASP ZAP es el programa principal que se utilizará para realizar la prueba de penetración en esta API, que implica escaneos automatizados y manuales, así como técnicas de escaneo activo (peticiones con con cargas pagas envenenadas), pasivo (solo revisión de vulnerabilidades en cuyas transacciones peticiones-respuesta pueda haber revelación de información delicada, sea técnica por ejemplo Cookie sin HttpOnly o la permitividd de inclusiones de scripts en dominios cruzados, así como secretos).
 
-### 2.4.1. CONFIGURACIÓN DE OWASP ZAP
+#### 2.4.1. CONFIGURACIÓN DE OWASP ZAP
 
 Lo primero que hay que hacer es configurar el programa para prepararlo para las pruebas. Con esto habrá la seguridad de sobre qué se está trabajando y qué resultados esperarse durante las pruebas, ya que esto define el comportamiento del programa para la realización de estas.
 
 Se dejará activado el escáner pasivo, ya que permite realizar una auditoría de forma más rápida y controlada, esto es que en la medida que se avanza manualmente, el escáner pasivo hará tareas en segundo plano para detectar posibles vulnerabilidades. La configuración de este quedará así para este trabajo:
 
-### 2.4.1.1. PASSIVE SCANNER
+##### 2.4.1.1. PASSIVE SCANNER
 
-#### Passive Scan Rules:
+###### Passive Scan Rules:
 
 Se dejarán todos los valores por defecto, y esto es:
 
@@ -159,7 +159,7 @@ Se dejarán todos los valores por defecto, y esto es:
 
 !["passive scan rules"](./recursos/2/1.png)
 
-#### Passive scan tags:
+###### Passive scan tags:
 
 Se dejarán todos los valores por defecto, y esto es:
 
@@ -167,7 +167,7 @@ Se dejarán todos los valores por defecto, y esto es:
 
 !["passive scan tags"](./recursos/2/2.png)
 
-#### Passive scanner:
+###### Passive scanner:
 
 Se dejarán todos los valores por defecto, y esto es:
 
@@ -178,15 +178,15 @@ Se dejarán todos los valores por defecto, y esto es:
 
 !["passive scanner"](./recursos/2/3.png)
 
-### 2.4.1.2. MODO DE ZAP
+##### 2.4.1.2. MODO DE ZAP
 
 Se trabajará en modo estándar (Standard Mode). Se habría podido utilizar el modo de ataque (ATTACK mode), pero habría que estar pendiente de las configuraciones del escáner activo, ya que podría en ciertos casos consumir más recursos de los necesarios, además de que hay que reconocer que se necesita experticia para esto.
 
-### 2.4.1.3. VALUE GENERATOR
+##### 2.4.1.3. VALUE GENERATOR
 
 Esta configuración es importante también, porque a pesar de que se puede dejar por defecto, añadirle valores puede ayudar a mejorar la auditoría, haciéndola personalizada en las búsquedas y ataques. El add-on OpenAPI, que se usará en el punto 2.3, la usa durante la importación de una definición, otra razón más para configurarla correctamente. Algunos campos que no estén definidos serán rellenados por valores que tiene este generador por defecto en ZAP, por ejemplo "John Due".
 
-### 2.4.1.4. SCRIPTS
+##### 2.4.1.4. SCRIPTS
 
 Cualquier script generado desde "HTTP Sender" debe estar deshabilitado:
 
@@ -195,7 +195,7 @@ Cualquier script generado desde "HTTP Sender" debe estar deshabilitado:
 
 Si no se deshabilita, la API podría interpretarlo como peticiones de un usuario registrado y autorizado. Aquí la idea es hacer las peticiones como si fuera un usuario invitado o no registrado (público).
 
-### 2.4.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
+#### 2.4.2 IMPORTACIÓN DE OPENAPI.JSON A ZAP
 
 Como la documentación permite obtener este documento y ZAP permite su importación, se realizará para agilizar los ataques. Durante la auditoría de una API, esto es un requisito mínimo para poder realizarla.
 
@@ -210,7 +210,7 @@ Como la documentación permite obtener este documento y ZAP permite su importaci
 ![](./recursos/2-5.png)
 
 
-### 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API
+#### 2.4.3. ANÁLISIS DEL RESULTADO LA IMPORTACIÓN DE LA ESPECIFICACIÓN DE LA API
 
 Como se había dicho previamente durante la configuración del OWASP ZAP en el punto 2.4.1.3. VALUE GENERATOR, el addon que importa el archivo OpenAPI.json realiza un escaneo activo breve a cada URL descrita en dicho descriptor, lo cual implica que le haya pasado una carga paga envenenada con información, así que es posible que haya podido incluso modificado la información que está almacenada en la base de datos (sea añadido, editado o borrado). Se revisará cada una de las URL, y se revisará qué tipo de respuesta se ha obtenido para cada una, así como las alertas obtenidas predeterminadas.
 
@@ -240,7 +240,7 @@ Respecto a Python, no hay resgistro de vulnerabilidades para la v3.10.18:
 
 ![](./recursos/2/8.png)
 
-### 2.4.4. EXPLORACIÓN MANUAL DE LAS DIRECCIONES QUE CONTIENEN PARÁMETROS EN LA RUTA DE LA URL EN BÚSQUEDA DE IDOR
+#### 2.4.4. EXPLORACIÓN MANUAL DE LAS DIRECCIONES QUE CONTIENEN PARÁMETROS EN LA RUTA DE LA URL EN BÚSQUEDA DE IDOR
 
 Es importante saber si las rutas de URL que apuntan a recursos están seguras. Las rutas de URL que apuntan a recursos tienen el siguiente formato:
 
@@ -286,11 +286,11 @@ Resultado para GET /orders/{order_id}
 
 Como se ha podido ver, ninguna petición ha sido aprobada por falta de autenticación y, por ende, de autorización.
 
-### 2.4.5. ESCANEO ACTIVO DE LA API
+#### 2.4.5. ESCANEO ACTIVO DE LA API
 
 Este es un buen momento para hacer un escaneo activo, ya que hay suficientes recursos a probar, y que el programa ya los conoce de antemano. Pero antes, hay que hacer algunas configuraciones al programa para hacer que el escaneo sea breve, pero efectivo.
 
-#### 2.4.5.1. CONFIGURACIÓN DE OWASP ZAP ANTES DEL ESCANEO ACTIVO
+##### 2.4.5.1. CONFIGURACIÓN DE OWASP ZAP ANTES DEL ESCANEO ACTIVO
 
 Las configuraciones son las siguientes:
 
@@ -320,7 +320,7 @@ La cobertura (scope) del escaneo quedará entonces en el contexto por defecto, y
 
 ![](./recursos/2/8-8.png)
 
-#### 2.4.5.2. PRIMER ESCANEO ACTIVO
+##### 2.4.5.2. PRIMER ESCANEO ACTIVO
 
 Una vez hecho esto, ya el programa estará preparado para el escaneo como se desea. 
 
@@ -353,7 +353,7 @@ Para el caso de las 5xx, es para ver si existe la posibilidad de que haya una vu
 
 Solo hubo una petición, y no se le ha inyectado ninguna carga paga que implique una inyección de comandos, ni de SQL. Solo parece que no pudo manejar el valor "\u0000" en username, que sería una nota a tener en cuenta para que se mejore la presentación de la API. Se emitirá una alerta de información para que cuando se genere el reporte, aparezca.
 
-#### 2.4.5.3. GUARDADO DEL RESULTADO DEL ESCANEO ACTIVO
+##### 2.4.5.3. GUARDADO DEL RESULTADO DEL ESCANEO ACTIVO
 
 Es importante guardar los resultados del escaneo activo, ya que, incluso con persistencia de sesión, no quedarían guardados. Esto podría servir para el análisis futuro de datos que no se alcanzaron a analizar, o por si se pueden analizar con otro programa especializado o que el auditor tenga desarrollado para dicho propósito.
 
@@ -367,7 +367,7 @@ Para guardar el registro del progreso (Scan Progress). Esto se guardará en un a
 
 ![](./recursos/2/8-11-3.png)
 
-#### 2.4.5.4. CREACIÓN DE ALERTA MANUAL
+##### 2.4.5.4. CREACIÓN DE ALERTA MANUAL
 
 
 En el punto anterior se evidenció un error interno en el servidor porque no fue capaz de manejar correctamente un campo en la api que permite reiniciar la contraseña. Para la generación de una alerta, se siguen los siguientes pasos:
@@ -381,7 +381,7 @@ Se especifica de qué se trata, parámetros y la evidencia.:
 En la lista de alertas (Alerts) debe aparecer como una con bandera azul, ya que es a modo de información:
 ![](./recursos/2/8-12-3.png)
 
-### 2.4.6. PERSISTENCIA DE LA SESIÓN
+#### 2.4.6. PERSISTENCIA DE LA SESIÓN
 
 Cuando se inició este proyecto, no se había considerado el hecho de persistir la sesión, pero dado a que ya hay mucho trabajo realizado, vale la pena guardar los cambios hechos en una sesión, que seguirá creciendo en la medida que se sigan creando y ejecutando más pruebas, así como alertas para el reporte final.
 
@@ -393,7 +393,7 @@ Paso 3:
 ![](./recursos/2/8-13-3.png)
 
 
-### 2.4.7. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CUSTOMER"
+#### 2.4.7. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CUSTOMER"
 
 A partir de este momento, se revisará cuál es el alcance de un usuario cliente o "Customer", accediendo como este y explorando todos los enlaces de la API, a ver si se encuentra una abertura hacia una escalada de privilegios.
 
@@ -410,7 +410,7 @@ Para poder realizar las peticiones desde el usuario "John Doe" que es de rol "Cu
 2. Crear 2 scripts: uno de autenticación (basado en Authentication) y otro de emisor de mensajes (basado en HTTP Sender).
 3. Configurar la sesión actual: la sesión actual tiene un contexto por defecto, que lo único que se le ha hecho es añadirle las direcciones provistas por el descriptor de la API previamente importado en el punto 2.4.2. Se creará un contexto llamado "Customer", que permitirá hacer peticiones desde un usuario "Customer" en este caso llamado "John Doe". Entonces se le añadirán las direcciones de la API, y se configurará la autenticación (Authentication), los usuarios (Users), el usuario forzado (Forced User) y la gestión de la sesión (Session Management).
 
-#### 2.4.7.1. MÉTODO DE AUTENTICACIÓN
+##### 2.4.7.1. MÉTODO DE AUTENTICACIÓN
 
 Para conocer cómo funciona este método, se revisará en la documentación (/docs o /redoc) cuál es la funcionalidad que permite la autenticación. Si se exploran las API, hay una que se llama "auth" y seguramente debe tener esta funcionalidad, es decir, que pida un usuario y contraseña como argumentos. Para este caso, la que coincide con estas características es la función "token", de tipo "POST":
 
@@ -430,7 +430,7 @@ Es como dice en la documentación. Se recibieron 2 cadenas de caracteres (string
 
 
 
-#### 2.4.7.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
+##### 2.4.7.2. CREACIÓN DE SCRIPTS PARA AUTOMATIZAR LA AUTENTICACIÓN Y ENVÍO DE MENSAJES AUTENTICADOS CON BEARER
 
 Esto se hace a través de dos scripts:
 
@@ -438,7 +438,7 @@ Esto se hace a través de dos scripts:
 2. Está basado en HTTP Sender que se va a llamar "Http-sender".
 
 
-##### CREACIÓN DE "REST-API-Bearer_auth.js"
+###### CREACIÓN DE "REST-API-Bearer_auth.js"
 
 Para este, se va a usar de referencia el script "OfflineTokenRefresh.js", que está en el repo "https://github.com/zaproxy/community-scripts", exactamente en la siguiente URL: https://github.com/zaproxy/community-scripts/blob/main/authentication/OfflineTokenRefresh.js
 
@@ -588,7 +588,7 @@ function getLoggedOutIndicator() {
 ~~~
 
 
-##### CREACIÓN DE "Http-sender.js"
+###### CREACIÓN DE "Http-sender.js"
 
 Para este se usó de referencia AddBearerTokenHeader.js, del repo "https://github.com/zaproxy/community-scripts", ya que como lo sugiere el script original "authentication/OfflineTokenRefresher.js" ahora llamado "REST-API-Bearer_auth.js", se usa en conjunto con este. Algunas cosas se modificaron para acomodarlas a este trabajo, y quedó finalmente así:
 
@@ -630,7 +630,7 @@ function responseReceived(msg, initiator, helper) {}
 ~~~
 
 
-#### 2.4.7.3. CONFIGURAR LA SESIÓN ACTUAL
+##### 2.4.7.3. CONFIGURAR LA SESIÓN ACTUAL
 
 
 Finalmente se hará un nuevo contexto llamado "Customer", desde el que se harán peticiones con el usuario "John Doe", que actualmente es "Customer". Para esto, primero se creará el nuevo contexto:
@@ -698,7 +698,7 @@ Y por último, hay que asegurarse de que nada esté por ahora excluido del conte
 A partir de ahora el programa está listo para realizar pruebas automatizadas desde este usuario como si estuviera autorizado (desde su sesión).
 
 
-#### 2.4.7.4. ESCANEO AUTOMATIZADO
+##### 2.4.7.4. ESCANEO AUTOMATIZADO
 
 Antes de hacer el escaneo automatizado, hay que habilitar el script que permite enviar las peticiones HTTP envenenadas con el token bearer generado por el script de autenticación:
 
@@ -718,11 +718,11 @@ En los vectores de entrada, se añadirán los de URL Path y HTTP Headers, a toda
 
 En las políticas, se usará "API". Enseguida se inicia el escaneo.
 
-**NOTA: no olvidar abrir el monitor del progreso.**
+**NOTA: no olvidarse abrir el monitor del progreso.**
 
 ![](./recursos/2/21-5.png)
 
-##### RESULTADOS
+###### RESULTADOS
 
 Esta vez fue un escaneo de un poco más de 20 minutos:
 
@@ -742,7 +742,7 @@ Además, el programa automáticamente ha detectado vulnerabilidades más serias 
 
 ![](./recursos/2/22-3.png)
 
-##### ANÁLISIS DE RESULTADOS Y ESTRATEGIAS PARA NUEVAS PRUEBAS
+###### ANÁLISIS DE RESULTADOS Y ESTRATEGIAS PARA NUEVAS PRUEBAS
 
 ###### ALERTAS ROJAS AUTOMÁTICAS
 El objetivo por lo pronto es tratar de buscar una escalada en los privilegios, ahora del usuario actual. Por lo pronto se ignorarán las alertas de redirección temporal, pero serán expuestas en el informe final.
@@ -782,14 +782,14 @@ Para asegurarse de esto, se hará una prueba manual intentando quitar el id # 2 
 
 También valdría la pena realizar las pruebas manuales que se hicieron desde un usuario invitado, estos son para buscar IDOR.
 
-#### 2.4.7.5. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
+##### 2.4.7.5. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
 
 Del escaneo automatizado del punto 2.4.7.4, se realizarán a cabo las siguientes pruebas:
 
 - Pruebas de IDOR que se hicieron desde el invitado, pero ahora desde el usuario John Doe (como se hicieron en el punto 2.4.4 EXPLORACIÓN MANUAL DE LAS DIRECCIONES QUE CONTIENEN PARÁMETROS EN LA RUTA DE LA URL EN BÚSQUEDA DE IDOR).
 - Intentar cambiar el role con un rol válido al usuario John Doe.
 
-##### PRUEBAS DE IDOR
+###### PRUEBAS DE IDOR
 
 Se harán para los siguientes valores:
 ~~~
@@ -865,7 +865,7 @@ GET /orders permite visualizar todas las órdenes del restaurante, algo que no d
 
 GET /orders/{order_id} es un caso de IDOR. Lo que se debería hacer es poderse acceder a este, siempre y cuando tenga alguna relación con el usuario actual, además de que el recurso debería estar enmascarado.
 
-##### PRUEBAS PARA EL CAMBIO DE ROL DEL USUARIO
+###### PRUEBAS PARA EL CAMBIO DE ROL DEL USUARIO
 
 Estas podrían explotar la vulnerabilidad de una escalada de privilegios. Lo que se intentará es tratar de cambiar el rol a uno con privilegios más altos. Como se desconocen sus posibles valores (no están documentados), se hará como si se le preguntara a los desarrolladores.
 
@@ -904,7 +904,7 @@ Y como se puede observar, se ha podido realizar una escalada en los privilegios,
 
 Cualquier cosa que se haga automatizada ahora, o que se haga desde este usuario tendrá la autorización de un empleado (Employee). Por eso, en la próxima sección 2.4.8. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "EMPLOYEE" se ejecutarán las mismas pruebas realizadas en esta sección de rol "Customer".
 
-### 2.4.8. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "EMPLOYEE"
+#### 2.4.8. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "EMPLOYEE"
 
 En la última parte de la sección anterior se pudo realizar una escalada en los privilegios y ahora se está en un usuario con rol de empleado (Employee), que por intuición, debería tener privilegios mucho más altos, que permita realizar ciertas operaciones adicionales que no se podían hacer en los roles anteriores.
 
@@ -913,7 +913,7 @@ Las pruebas que se harán tendrán el mismo orden de las de "Customer":
 - 1. Escaneo automatizado. Se hará sobre el mismo contexto "Customer".
 - 2. Escaneo manual de recursos sospechosos de ser vulnerables.
 
-#### 2.4.8.1. ESCANEO AUTOMATIZADO
+##### 2.4.8.1. ESCANEO AUTOMATIZADO
 
 Este escaneo tardó casi media hora:
 
@@ -923,12 +923,12 @@ Se puede visualizar que hubo muchas respuestas 2xx así como 5xx:
 
 ![](./recursos/2/49.png)
 
-##### RESULTADOS
+###### RESULTADOS
 
 No se encontraron resultados significativos, pero hay algunos para considerar, como el hecho de que los empleados no puedan cambiar sus contraseñas. Ya se ha generado la alerta, como riesgo medio y confirmada.
 
 
-#### 2.4.8.2. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
+##### 2.4.8.2. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
 
 
 Se intentará cambiar el rol del usuario a "Chef":
@@ -943,7 +943,7 @@ A partir de este punto se van a hacer unas pruebas en las que hay vulnerabilidad
 
 Con las técnicas utilizadas hasta ahora se han podido descubrir 4 de ellas (level_0 hasta level_3). Para el caso de level_4, es una *falsificación de petición del lado del servidor* (Server Side Request Forgery o SSRF). Se espera que con este ataque se pueda escalar al rol de "Chef". Pero antes se va a revisar en la documentación de la API el porqué podría presentarse esta vulnerabilidad. Y para el nivel 5, se intentará ejecutar algún comando en el SO en el que está ejecutándose la API.
 
-##### PRUEBA DE FALSIFICACIÓN DE PETICIÓN DEL LADO DEL SERVIDOR (SSRF)
+###### PRUEBA DE FALSIFICACIÓN DE PETICIÓN DEL LADO DEL SERVIDOR (SSRF)
 
 Para que pueda haber una SSRF, la API debe cumplir con un requisito de sospecha y este es que haya al menos una función de la API que el usuario puede realizar que implique que el servidor deba hacer una petición a otra dirección, de manera que la respuesta de esa petición quede incrustada en la respuesta original realizada por el usuario. Gráficamente, se vería así:
 
@@ -1074,7 +1074,7 @@ Se obtuvo el siguiente resultado:
 
 El ataque ha sido un éxito, permitiendo una nueva escalada de privilegios al usuario "Chef". Se generará otra alerta con riesgo alto y seguridad en el juicio confirmada (es 100 % seguro de que sí sucedió) relacionada con la recuperación de contraseñas, para este caso, la del chef.
 
-### 2.4.9. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CHEF"
+#### 2.4.9. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CHEF"
 
 En la última parte de la sección anterior se pudo realizar una escalada en los privilegios hasta llegar a un usuario con rol "Chef" que por intuición, debería tener privilegios ahora mucho más altos, que permita realizar ciertas operaciones adicionales que no se podían hacer en los roles anteriores.
 
@@ -1083,11 +1083,88 @@ Las pruebas que se harán tendrán el mismo orden de las de "Customer" y "Employ
 - 1. Escaneo automatizado. Se hará sobre el mismo contexto "Customer".
 - 2. Escaneo manual de recursos sospechosos de ser vulnerables.
 
-#### 2.4.9.1. ESCANEO AUTOMATIZADO
+##### 2.4.9.1. ESCANEO AUTOMATIZADO
 
-#### 2.4.9.2. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
+Antes de hacer el escaneo automatizado, hay que habilitar el script que permite enviar las peticiones HTTP envenenadas con el token bearer generado por el script de autenticación.
 
-##### PRUEBA DE EJECUCIÓN DE COMANDOS EN EL SO DESDE LA API
+Al contexto actual hay que agregar un nuevo usuario, este será el chef:
+
+![](./recursos/2/58.png)
+
+Y se fuerza el usuario "chef":
+
+![](./recursos/2/59.png)
+
+Ahora se inicia el escaneo automático, pero antes hay que configurar algunos parámetros:
+
+En la cobertura (Scope) se hará en el contexto "Customer", con el usuario "Chef", que sea recursivo (Recurse) y que permita visualizar los ajustes avanzados:
+
+![](./recursos/2/60.png)
+
+
+En los vectores de entrada, se añadirán los de URL Path y HTTP Headers, a todas las peticiones. Hará un poco más lenta la prueba, pero ya se ha cerrado bastante desde la configuración "Technology" de este contexto, en las propiedades de la sesión:
+
+![](./recursos/2/61.png)
+
+
+En las políticas, se usará "API". Enseguida se inicia el escaneo.
+
+Durante la prueba aparecía un error de autenticación en el script "REST-API-Bearer_auth.js", esto pudo ser porque durane la prueba se pudo haber restablecido la contraseña. Sin embargo, conserva el mismo último token. Lo que se hará es detener la prueba pasado los 30 minutos, que es lo que dura el token válido. Luego se hará otra con los parámetros faltantes hasta completar todas las pruebas asociadas a la política "API".
+
+![](./recursos/2/62.png)
+
+Pasado los 30 minutos, se vuelve a hacer la SSRF que permite restablecer la contraseña. Para decodificar base64, también se puede usar Python así, en caso de no tener o no querer depender de Internet:
+
+![](./recursos/2/63.png)
+
+Como se había planificado, pasada la media hora debe detenerse la prueba manualmente:
+
+![](./recursos/2/64.png)
+
+Para la próxima prueba, se hará una nueva política basada en "API" que se va a llamar "API2", en la que se excluirán las pruebas a excepción de la última (Remote OS Command Injection), porque se estaba haciendo en el momento que se agotó el tiempo:
+
+![](./recursos/2/65.png)
+
+![](./recursos/2/66.png)
+
+![](./recursos/2/67.png)
+
+![](./recursos/2/68.png)
+
+![](./recursos/2/69.png)
+
+![](./recursos/2/70.png)
+
+Hubo 13 alertas hasta aquí, pero estaban asociadas a redicreción externa y a inyección SQL.
+
+A continuación, los resultados de la 2ª iteración:
+
+![](./recursos/2/71.png)
+
+Aquí llama la atención que hubo 2 alertas asociadas a ejecución remota de comandos en el sistema operativo:
+
+![](./recursos/2/72.png)
+
+![](./recursos/2/73.png)
+
+Al revisar el ataque automatizado que hizo ZAP usando la inyección "cat /etc/passwd", un comando en Linux para almacenar informción esencial acerca de las cuentas de usuario. Al compararlo contra el del contenedor que ejecuta el servicio de la API, se puede apreciar que tienen el mismo contenido, lo cual es un caso certero de *ejecución remota en el sistema operativo*.
+
+
+##### 2.4.9.2. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
+
+Como se han alcanzado todas las banderas, no hay más procedimientos para hacer manualmente.
 
 
 
+# 3. CONCLUSIONES
+
+Las alertas se emitirán en un reporte que OWASP ZAP es capaz de generar así:
+
+![](./recursos/2/74.png)
+
+![](./recursos/2/75.png)
+
+![](./recursos/2/76.png)
+
+
+Como es un reporte relativamente extenso, se adjuntará como anexo a este trabajo con el nombre "2025-10-01-ZAP-Report-.html", dentro de la carpeta comprimida "RESTaurant.zip".
