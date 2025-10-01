@@ -1072,6 +1072,18 @@ Se obtuvo el siguiente resultado:
 
 El ataque ha sido un éxito, permitiendo una nueva escalada de privilegios al usuario "Chef".
 
+### 2.4.9. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CHEF"
+
+En la última parte de la sección anterior se pudo realizar una escalada en los privilegios hasta llegar a un usuario con rol "Chef" que por intuición, debería tener privilegios ahora mucho más altos, que permita realizar ciertas operaciones adicionales que no se podían hacer en los roles anteriores.
+
+Las pruebas que se harán tendrán el mismo orden de las de "Customer" y "Employee":
+
+- 1. Escaneo automatizado. Se hará sobre el mismo contexto "Customer".
+- 2. Escaneo manual de recursos sospechosos de ser vulnerables.
+
+#### 2.4.9.1. ESCANEO AUTOMATIZADO
+
+#### 2.4.9.2. ESCANEO MANUAL DE RECURSOS SOSPECHOSOS DE SER VULNERABLES
 
 ##### PRUEBA DE EJECUCIÓN DE COMANDOS EN EL SO DESDE LA API
 
