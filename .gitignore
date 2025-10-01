@@ -163,3 +163,4 @@ cython_debug/
 postgres_data
 .pytest_cache
 test_db.db
+*.zip
