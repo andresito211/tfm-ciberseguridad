@@ -1052,6 +1052,8 @@ GET /profile
 {"password":"[V=JPBYyJ!Rw4:51LJM$j(1:7Uv^Q=Bs"}
 ~~~
 
+Se generará una alerta de alto riesgo y alta seguridad en el juicio de que si haya sido probable una SSRF.
+
 3. AL intentar solicitar un token con las credenciales:
 
 ~~~
@@ -1070,7 +1072,7 @@ Se obtuvo el siguiente resultado:
 
 ![](./recursos/2/57.png)
 
-El ataque ha sido un éxito, permitiendo una nueva escalada de privilegios al usuario "Chef".
+El ataque ha sido un éxito, permitiendo una nueva escalada de privilegios al usuario "Chef". Se generará otra alerta con riesgo alto y seguridad en el juicio confirmada (es 100 % seguro de que sí sucedió) relacionada con la recuperación de contraseñas, para este caso, la del chef.
 
 ### 2.4.9. EXPLORACIÓN DE LA API DESDE UN USUARIO CON ROL "CHEF"
 
